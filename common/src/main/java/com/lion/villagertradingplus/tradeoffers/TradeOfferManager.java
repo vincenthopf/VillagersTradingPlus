@@ -31,20 +31,20 @@ public class TradeOfferManager {
 
     public static void registerTradeOffers() {
         VillagerTradingPlus.LOGGER.info("Registered JSON trade offer adapter.");
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_item"), new JsonSellItemTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"buy_item"), new JsonBuyItemTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"process_item"), new JsonProcessItemTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_potion"), new JsonSellPotionTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_enchanted_tool"), new JsonSellEnchantedToolTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_specific_enchanted_tool"), new JsonSellSpecificEnchantedToolTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_enchanted_book"), new JsonSellEnchantedBookTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_specific_enchanted_book"), new JsonSellSpecificEnchantedBookTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_map"), new JsonSellStructureMapTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"weighted_pool"), new JsonWeightedPoolTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"buy_tagged_item"), new JsonBuyTaggedItemTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_tagged_item"), new JsonSellTaggedItemTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_enchanted_book_from_list"), new JsonSellEnchantedBookFromListTradeOffer());
-        tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"multi_input"), new JsonMultiInputTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"sell_item"), new JsonSellItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"buy_item"), new JsonBuyItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"process_item"), new JsonProcessItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"sell_potion"), new JsonSellPotionTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"sell_enchanted_tool"), new JsonSellEnchantedToolTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"sell_specific_enchanted_tool"), new JsonSellSpecificEnchantedToolTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"sell_enchanted_book"), new JsonSellEnchantedBookTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"sell_specific_enchanted_book"), new JsonSellSpecificEnchantedBookTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"sell_map"), new JsonSellStructureMapTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"weighted_pool"), new JsonWeightedPoolTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"buy_tagged_item"), new JsonBuyTaggedItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"sell_tagged_item"), new JsonSellTaggedItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"sell_enchanted_book_from_list"), new JsonSellEnchantedBookFromListTradeOffer());
+        tradeOfferRegistry.put(Identifier.of(VillagerTradingPlus.MOD_ID,"multi_input"), new JsonMultiInputTradeOffer());
     }
 
     /**
@@ -76,11 +76,11 @@ public class TradeOfferManager {
 
         // A bare "sell_item" parses as minecraft:sell_item, which is never what the author meant.
         if (type.indexOf(':') < 0) {
-            return tradeOfferRegistry.get(new Identifier(VillagerTradingPlus.MOD_ID, id.getPath()));
+            return tradeOfferRegistry.get(Identifier.of(VillagerTradingPlus.MOD_ID, id.getPath()));
         }
 
         if (LEGACY_NAMESPACE.equals(id.getNamespace())) {
-            adapter = tradeOfferRegistry.get(new Identifier(VillagerTradingPlus.MOD_ID, id.getPath()));
+            adapter = tradeOfferRegistry.get(Identifier.of(VillagerTradingPlus.MOD_ID, id.getPath()));
             if (adapter != null && REPORTED_LEGACY_TYPES.add(type)) {
                 VillagerTradingPlus.LOGGER.warn(
                         "Trade type '{}' still uses the old namespace; it now lives at '{}:{}'. Still accepted, but please update the file.",

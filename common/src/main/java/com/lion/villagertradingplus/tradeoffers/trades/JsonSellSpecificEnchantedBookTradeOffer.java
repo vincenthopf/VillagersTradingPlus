@@ -57,7 +57,7 @@ public class JsonSellSpecificEnchantedBookTradeOffer extends JsonTradeOffer {
             if (this.enchantment != null) {
                 EnchantedBookItem.addEnchantment(book, new EnchantmentLevelEntry(this.enchantment, this.level));
             }
-            return new TradeOffer(this.currency.copy(), book, this.maxUses, this.experience, this.multiplier);
+            return new TradeOffer(traded(this.currency.copy()), book, this.maxUses, this.experience, this.multiplier);
         }
     }
 }

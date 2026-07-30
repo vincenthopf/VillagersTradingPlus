@@ -7,6 +7,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.village.TradeOffer;
+import net.minecraft.village.TradedItem;
 import net.minecraft.village.TradeOffers;
 
 /**
@@ -44,8 +45,14 @@ public final class PricingTradeFactory implements TradeOffers.Factory {
             return offer;
         }
 
-        ItemStack first = offer.getOriginalFirstBuyItem().copy();
-        first.setCount(scaleCount(first.getCount(), first.getMaxCount(), factor));
+        // Rebuilt rather than copied: the buy side is a match rule now, and rebuilding it from its
+        // own item and component predicate keeps whatever the trade demanded while only the count
+        // moves. Scaling a display stack instead would quietly drop those requirements.
+        TradedItem originalFirst = offer.getFirstBuyItem();
+        TradedItem first = new TradedItem(
+                originalFirst.item(),
+                scaleCount(originalFirst.count(), originalFirst.itemStack().getMaxCount(), factor),
+                originalFirst.components());
 
         return new TradeOffer(first, offer.getSecondBuyItem(), offer.getSellItem(),
                 offer.getUses(), offer.getMaxUses(), offer.getMerchantExperience(),

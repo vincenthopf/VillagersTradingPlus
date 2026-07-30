@@ -57,7 +57,7 @@ public class JsonSellSpecificEnchantedToolTradeOffer extends JsonTradeOffer {
             if (this.enchantment != null) {
                 itemStack.addEnchantment(this.enchantment, this.level);
             }
-            return new TradeOffer(this.currency.copy(), itemStack, this.maxUses, this.experience, this.multiplier);
+            return new TradeOffer(traded(this.currency.copy()), itemStack, this.maxUses, this.experience, this.multiplier);
         }
     }
 }

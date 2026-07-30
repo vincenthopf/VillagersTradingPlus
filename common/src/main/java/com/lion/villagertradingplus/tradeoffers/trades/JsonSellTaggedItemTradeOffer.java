@@ -57,7 +57,7 @@ public class JsonSellTaggedItemTradeOffer extends JsonTradeOffer {
             if (resolved.isEmpty()) {
                 return null;
             }
-            return new TradeOffer(currency.copy(), ItemStack.EMPTY, resolved, 0, maxUses, experience, multiplier, demand);
+            return new TradeOffer(traded(currency.copy()), tradedOrEmpty(ItemStack.EMPTY), resolved, 0, maxUses, experience, multiplier, demand);
         }
 
         /** A tag input is one random member per generated offer, so the catalogue lists them all. */

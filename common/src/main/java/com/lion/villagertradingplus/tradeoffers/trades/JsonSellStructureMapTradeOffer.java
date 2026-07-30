@@ -7,7 +7,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.map.MapIcon;
+import net.minecraft.item.map.MapDecorationTypes;
 import net.minecraft.item.map.MapState;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
@@ -61,9 +61,9 @@ public class JsonSellStructureMapTradeOffer extends JsonTradeOffer {
                 if (blockPos != null) {
                     ItemStack itemStack = FilledMapItem.createMap(serverWorld, blockPos.getX(), blockPos.getZ(), (byte)2, true, true);
                     FilledMapItem.fillExplorationMap(serverWorld, itemStack);
-                    MapState.addDecorationsNbt(itemStack, blockPos, "+", MapIcon.Type.RED_X);
+                    MapState.addDecorationsNbt(itemStack, blockPos, "+", MapDecorationTypes.RED_X);
                     itemStack.setCustomName(Text.translatable(this.nameKey));
-                    return new TradeOffer(currency, buy, itemStack, this.maxUses, this.experience, this.multiplier);
+                    return new TradeOffer(traded(currency), tradedOrEmpty(buy), itemStack, this.maxUses, this.experience, this.multiplier);
                 } else {
                     return null;
                 }

@@ -2,42 +2,30 @@ plugins {
 	id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
-
-loom {
-	accessWidenerPath = project(":common").loom.accessWidenerPath
-
-	forge {
-		convertAccessWideners = true
-		extraAccessWideners.add loom.accessWidenerPath.get().asFile.name
-
-		mixinConfig "villagertradingplus-common.mixins.json"
-	}
-}
-
 architectury {
 	platformSetupLoomIde()
-	forge()
+	neoForge()
 }
 
 configurations {
 	common
-	shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
+	shadowCommon
 	compileClasspath.extendsFrom common
 	runtimeClasspath.extendsFrom common
-	developmentForge.extendsFrom common
+	developmentNeoForge.extendsFrom common
 }
 
 dependencies {
-	forge "net.minecraftforge:forge:${rootProject.forge_version}"
+	neoForge "net.neoforged:neoforge:${rootProject.neoforge_version}"
 
 	common(project(path: ":common", configuration: "namedElements")) { transitive false }
-	shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
+	shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive = false }
 }
 
 processResources {
 	inputs.property "version", project.version
 
-	filesMatching("META-INF/mods.toml") {
+	filesMatching("META-INF/neoforge.mods.toml") {
 		expand "version": project.version
 	}
 }
@@ -47,25 +35,25 @@ shadowJar {
 	exclude "architectury.common.json"
 
 	configurations = [project.configurations.shadowCommon]
-	classifier "dev-shadow"
+	archiveClassifier.set("dev-shadow")
 }
 
 remapJar {
 	input.set shadowJar.archiveFile
 	dependsOn shadowJar
-	classifier null
+	archiveClassifier.set(null)
 	archiveFileName = "${rootProject.mod_id}-${project.name}-mc${rootProject.minecraft_version}-${rootProject.mod_version}.jar"
 }
 
 jar {
-	classifier "dev"
-	setArchivesBaseName("villagertradingplus-FORGE");
+	archiveClassifier.set("dev")
 }
 
 sourcesJar {
 	def commonSources = project(":common").sourcesJar
 	dependsOn commonSources
 	from commonSources.archiveFile.map { zipTree(it) }
+	duplicatesStrategy 'exclude'
 }
 
 components.java {
@@ -76,13 +64,12 @@ components.java {
 
 publishing {
 	publications {
-		mavenForge(MavenPublication) {
+		mavenNeoForge(MavenPublication) {
 			artifactId = rootProject.archives_base_name + "-" + project.name
 			from components.java
 		}
 	}
 
 	repositories {
-		// Add repositories to publish to here.
 	}
 }

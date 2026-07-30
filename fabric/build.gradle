@@ -2,10 +2,6 @@ plugins {
 	id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
-allprojects {
-	archivesBaseName = "${rootProject.mod_id}-fabric-mc${rootProject.minecraft_version}"
-}
-
 architectury {
 	platformSetupLoomIde()
 	fabric()
@@ -52,13 +48,12 @@ remapJar {
 	injectAccessWidener = true
 	input.set shadowJar.archiveFile
 	dependsOn shadowJar
-	classifier null
+	archiveClassifier.set(null)
 	archiveFileName = "${rootProject.mod_id}-${project.name}-mc${rootProject.minecraft_version}-${rootProject.mod_version}.jar"
 }
 
 jar {
-	classifier "dev"
-	setArchivesBaseName("villagertradingplus-FABRIC");
+	archiveClassifier.set("dev")
 }
 
 sourcesJar {
@@ -83,6 +78,5 @@ publishing {
 	}
 
 	repositories {
-		// Add repositories to publish to here.
 	}
 }

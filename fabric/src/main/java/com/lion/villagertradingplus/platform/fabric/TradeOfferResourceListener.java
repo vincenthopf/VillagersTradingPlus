@@ -30,7 +30,7 @@ public class TradeOfferResourceListener extends JsonDataLoader implements Identi
 
     @Override
     public Identifier getFabricId() {
-        return new Identifier(VillagerTradingPlus.MOD_ID, "villager_data_loader");
+        return Identifier.of(VillagerTradingPlus.MOD_ID, "villager_data_loader");
     }
 
     @Override

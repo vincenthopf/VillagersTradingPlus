@@ -1,4 +1,4 @@
-package com.lion.villagertradingplus.platform.forge;
+package com.lion.villagertradingplus.platform.neoforge;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;

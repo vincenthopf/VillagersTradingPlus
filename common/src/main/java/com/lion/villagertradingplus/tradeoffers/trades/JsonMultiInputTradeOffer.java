@@ -56,7 +56,7 @@ public class JsonMultiInputTradeOffer extends JsonTradeOffer {
 
         @Override
         public TradeOffer create(Entity entity, Random random) {
-            return new TradeOffer(inputA.copy(), inputB.copy(), sell.copy(), 0, maxUses, experience, multiplier, demand);
+            return new TradeOffer(traded(inputA.copy()), tradedOrEmpty(inputB.copy()), sell.copy(), 0, maxUses, experience, multiplier, demand);
         }
     }
 }

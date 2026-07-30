@@ -20,7 +20,7 @@ import java.util.List;
  */
 public final class TradeCatalogPacket {
 
-    public static final Identifier CHANNEL = new Identifier("villagertradingplus", "trade_catalog");
+    public static final Identifier CHANNEL = Identifier.of("villagertradingplus", "trade_catalog");
 
     private static final int MAX_PAYLOAD_BYTES = 700_000;
 

@@ -5,7 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.VillagerTradingPlus;
 import net.minecraft.enchantment.Enchantment;
-import net.minecraft.item.DyeableItem;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.DyedColorComponent;
+import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -15,7 +17,6 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.potion.Potion;
-import net.minecraft.potion.PotionUtil;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -82,13 +83,17 @@ public final class ItemStackSerializer {
             applyEnchantments(stack, json.getAsJsonArray("enchantments"));
         }
 
-        if (json.has("color") && stack.getItem() instanceof DyeableItem dyeable) {
-            dyeable.setColor(stack, parseColor(json.get("color").getAsString()));
+        // No DyeableItem check any more: dyeing is a component, so any item can carry a colour and
+        // the game simply ignores it on items that do not render one.
+        if (json.has("color")) {
+            stack.set(DataComponentTypes.DYED_COLOR,
+                    new DyedColorComponent(parseColor(json.get("color").getAsString()), true));
         }
 
         if (json.has("potion")) {
-            Potion potion = Registries.POTION.get(Identifier.tryParse(json.get("potion").getAsString()));
-            PotionUtil.setPotion(stack, potion);
+            Registries.POTION.getEntry(Identifier.tryParse(json.get("potion").getAsString()))
+                    .ifPresent(potion -> stack.set(DataComponentTypes.POTION_CONTENTS,
+                            new PotionContentsComponent(potion)));
         }
 
         if (json.has("skull_owner")) {

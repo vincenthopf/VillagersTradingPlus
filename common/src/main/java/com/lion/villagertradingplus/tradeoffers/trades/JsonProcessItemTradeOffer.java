@@ -41,7 +41,7 @@ public class JsonProcessItemTradeOffer extends JsonTradeOffer {
         }
 
         public TradeOffer create(Entity entity, net.minecraft.util.math.random.Random random) {
-            return new TradeOffer(buy, currency, sell, 0, this.maxUses, this.experience, this.multiplier, this.demand);
+            return new TradeOffer(traded(buy), tradedOrEmpty(currency), sell, 0, this.maxUses, this.experience, this.multiplier, this.demand);
         }
 
     }

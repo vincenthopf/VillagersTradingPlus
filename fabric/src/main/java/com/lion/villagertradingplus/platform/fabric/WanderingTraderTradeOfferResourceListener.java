@@ -21,7 +21,7 @@ public class WanderingTraderTradeOfferResourceListener extends JsonDataLoader im
 
     @Override
     public Identifier getFabricId() {
-        return new Identifier(VillagerTradingPlus.MOD_ID, "wandering_trader_data_loader");
+        return Identifier.of(VillagerTradingPlus.MOD_ID, "wandering_trader_data_loader");
     }
 
     @Override

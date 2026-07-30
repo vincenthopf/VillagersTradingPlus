@@ -1,4 +1,4 @@
-package com.lion.villagertradingplus.platform.forge;
+package com.lion.villagertradingplus.platform.neoforge;
 
 import com.lion.villagertradingplus.platform.NetworkHelper;
 import io.netty.buffer.Unpooled;

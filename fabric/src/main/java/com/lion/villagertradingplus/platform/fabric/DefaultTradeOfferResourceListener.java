@@ -22,7 +22,7 @@ public class DefaultTradeOfferResourceListener extends JsonDataLoader implements
 
     @Override
     public Identifier getFabricId() {
-        return new Identifier(VillagerTradingPlus.MOD_ID,"default_villager_data_loader");
+        return Identifier.of(VillagerTradingPlus.MOD_ID,"default_villager_data_loader");
     }
 
     @Override
