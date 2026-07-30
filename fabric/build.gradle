@@ -1,0 +1,96 @@
+plugins {
+	id "com.github.johnrengelman.shadow" version "7.1.2"
+}
+
+allprojects {
+	archivesBaseName = "${rootProject.mod_id}-fabric-mc${rootProject.minecraft_version}"
+}
+
+architectury {
+	platformSetupLoomIde()
+	fabric()
+}
+
+// Fabric reads SemVer, where everything after "+" is build metadata: it is shown in the mod list but
+// ignored when a dependency range is tested, so ">=1.0.0" still matches this build. Writing it with a
+// "-" instead would mark the build a PRERELEASE and drop it out of that very range.
+// Forge needs the opposite treatment - see forge/build.gradle.
+version = "${rootProject.mod_version}+mc${rootProject.minecraft_version}"
+
+configurations {
+	common
+	shadowCommon // Don't use shadow from the shadow plugin since it *excludes* files.
+	compileClasspath.extendsFrom common
+	runtimeClasspath.extendsFrom common
+	developmentFabric.extendsFrom common
+}
+
+loom {
+	accessWidenerPath = project(":common").loom.accessWidenerPath
+}
+
+
+dependencies {
+	modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+
+	modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+
+	common(project(path: ":common", configuration: "namedElements")) { transitive false }
+	shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+shadowJar {
+	exclude "architectury.common.json"
+
+	configurations = [project.configurations.shadowCommon]
+	archiveClassifier.set("dev-shadow")
+}
+
+remapJar {
+	injectAccessWidener = true
+	input.set shadowJar.archiveFile
+	dependsOn shadowJar
+	classifier null
+	// Spelled out rather than left to the version string, so both loaders ship the same file name
+	// shape even though their version fields have to differ.
+	archiveFileName = "${rootProject.mod_id}-${project.name}-mc${rootProject.minecraft_version}-${rootProject.mod_version}.jar"
+}
+
+jar {
+	classifier "dev"
+	setArchivesBaseName("villagertradingplus-FABRIC");
+}
+
+sourcesJar {
+	def commonSources = project(":common").sourcesJar
+	dependsOn commonSources
+	from commonSources.archiveFile.map { zipTree(it) }
+	duplicatesStrategy 'exclude'
+}
+
+components.java {
+	withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
+		skip()
+	}
+}
+
+publishing {
+	publications {
+		mavenFabric(MavenPublication) {
+			artifactId = rootProject.archives_base_name + "-" + project.name
+			from components.java
+		}
+	}
+
+	repositories {
+		// Add repositories to publish to here.
+	}
+}

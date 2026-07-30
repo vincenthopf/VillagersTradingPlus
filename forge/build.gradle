@@ -1,0 +1,97 @@
+plugins {
+	id "com.github.johnrengelman.shadow" version "7.1.2"
+}
+
+
+loom {
+	accessWidenerPath = project(":common").loom.accessWidenerPath
+
+	forge {
+		convertAccessWideners = true
+		extraAccessWideners.add loom.accessWidenerPath.get().asFile.name
+
+		mixinConfig "villagertradingplus-common.mixins.json"
+	}
+}
+
+architectury {
+	platformSetupLoomIde()
+	forge()
+}
+
+// Forge compares Maven versions, not SemVer, and there anything trailing the third number wrecks the
+// parse: "1.0.0+mc1.20.1" comes out as major version 0 and stops satisfying "[1.0.0,)" entirely,
+// while "1.0.0-mc1.20.1" sorts BELOW plain 1.0.0 and fails the same range from the other side. So the
+// version field stays bare here; the Minecraft version rides in the file name and the display name.
+version = rootProject.mod_version
+
+configurations {
+	common
+	shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
+	compileClasspath.extendsFrom common
+	runtimeClasspath.extendsFrom common
+	developmentForge.extendsFrom common
+}
+
+dependencies {
+	forge "net.minecraftforge:forge:${rootProject.forge_version}"
+
+	common(project(path: ":common", configuration: "namedElements")) { transitive false }
+	shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
+}
+
+processResources {
+	inputs.property "version", project.version
+	inputs.property "minecraft_version", rootProject.minecraft_version
+
+	filesMatching("META-INF/mods.toml") {
+		expand "version": project.version, "minecraft_version": rootProject.minecraft_version
+	}
+}
+
+shadowJar {
+	exclude "fabric.mod.json"
+	exclude "architectury.common.json"
+
+	configurations = [project.configurations.shadowCommon]
+	classifier "dev-shadow"
+}
+
+remapJar {
+	input.set shadowJar.archiveFile
+	dependsOn shadowJar
+	classifier null
+	// Spelled out rather than left to the version string, so both loaders ship the same file name
+	// shape even though their version fields have to differ.
+	archiveFileName = "${rootProject.mod_id}-${project.name}-mc${rootProject.minecraft_version}-${rootProject.mod_version}.jar"
+}
+
+jar {
+	classifier "dev"
+	setArchivesBaseName("villagertradingplus-FORGE");
+}
+
+sourcesJar {
+	def commonSources = project(":common").sourcesJar
+	dependsOn commonSources
+	from commonSources.archiveFile.map { zipTree(it) }
+}
+
+components.java {
+	withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
+		skip()
+	}
+}
+
+publishing {
+	publications {
+		mavenForge(MavenPublication) {
+			artifactId = rootProject.archives_base_name + "-" + project.name
+			from components.java
+		}
+	}
+
+	repositories {
+		// Add repositories to publish to here.
+	}
+}

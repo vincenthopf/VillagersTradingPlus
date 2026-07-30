@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "package": "com.lion.villagertradingplus.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "mixins": [
+    "MerchantScreenHandlerAccessor",
+    "MerchantScreenHandlerMixin",
+    "VillagerEntityMixin",
+    "WanderingTraderMixin"
+  ],
+  "client": [
+    "HandledScreenAccessor",
+    "MerchantScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "villagertradingplus",
+  "version": "${version}",
+  "name": "VillagerTradingPlus",
+  "description": "A library for defining villager and wandering trader trades in JSON, with conditions, dynamic pricing and an in-game trade catalog.",
+  "authors": [
+    "Finallion"
+  ],
+  "contact": {},
+
+  "license": "CC0-1.0",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.lion.villagertradingplus.fabric.VillagerTradingPlusFabric"
+    ],
+    "client": [
+      "com.lion.villagertradingplus.fabric.VillagerTradingPlusClientFabric"
+    ]
+  },
+  "mixins": [
+    "villagertradingplus-common.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.14.21",
+    "fabric-api": "*",
+    "minecraft": ">=1.20",
+    "java": ">=17"
+  }
+}
