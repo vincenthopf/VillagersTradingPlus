@@ -62,7 +62,7 @@ public class JsonSellStructureMapTradeOffer extends JsonTradeOffer {
                     ItemStack itemStack = FilledMapItem.createMap(serverWorld, blockPos.getX(), blockPos.getZ(), (byte)2, true, true);
                     FilledMapItem.fillExplorationMap(serverWorld, itemStack);
                     MapState.addDecorationsNbt(itemStack, blockPos, "+", MapDecorationTypes.RED_X);
-                    itemStack.setCustomName(Text.translatable(this.nameKey));
+                    itemStack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.translatable(this.nameKey));
                     return new TradeOffer(traded(currency), tradedOrEmpty(buy), itemStack, this.maxUses, this.experience, this.multiplier);
                 } else {
                     return null;
@@ -80,7 +80,7 @@ public class JsonSellStructureMapTradeOffer extends JsonTradeOffer {
         @Override
         public void expandCatalog(Entity merchant, CatalogBuilder out) {
             ItemStack map = new ItemStack(Items.FILLED_MAP);
-            map.setCustomName(Text.translatable(this.nameKey));
+            map.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.translatable(this.nameKey));
             out.add(this.currency, this.buy, map, this.maxUses, this.experience, this.multiplier, 0);
         }
     }

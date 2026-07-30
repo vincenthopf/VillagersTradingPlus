@@ -56,7 +56,10 @@ public abstract class JsonTradeOffer {
         if (changes.isEmpty()) {
             return tradedItem;
         }
-        return tradedItem.withComponents(builder -> addChanges(builder, changes));
+        return tradedItem.withComponents(builder -> {
+            addChanges(builder, changes);
+            return builder;
+        });
     }
 
     /** The empty stack means "no second slot", which the offer expresses as an absent optional. */

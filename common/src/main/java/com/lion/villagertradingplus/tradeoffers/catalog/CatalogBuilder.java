@@ -185,7 +185,7 @@ public final class CatalogBuilder {
     }
 
     public void addOffer(TradeOffer offer, int rawMinPrice, int rawMaxPrice) {
-        add(offer.getOriginalFirstBuyItem(), offer.getSecondBuyItem(), offer.getSellItem(),
+        add(offer.getOriginalFirstBuyItem(), offer.getDisplayedSecondBuyItem(), offer.getSellItem(),
                 offer.getMaxUses(), offer.getMerchantExperience(), offer.getPriceMultiplier(),
                 offer.getDemandBonus(), rawMinPrice, rawMaxPrice);
     }

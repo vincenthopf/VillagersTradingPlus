@@ -296,11 +296,11 @@ public final class TradeConditions {
             return Optional.empty();
         }
         GlobalPos pos = jobSite.get();
-        if (!pos.getDimension().equals(villager.getWorld().getRegistryKey())) {
+        if (!pos.dimension().equals(villager.getWorld().getRegistryKey())) {
             return Optional.empty();
         }
         return Optional.of(net.minecraft.registry.Registries.BLOCK.getId(
-                villager.getWorld().getBlockState(pos.getPos()).getBlock()));
+                villager.getWorld().getBlockState(pos.pos()).getBlock()));
     }
 
     private static Set<String> toStringSet(JsonArray array) {

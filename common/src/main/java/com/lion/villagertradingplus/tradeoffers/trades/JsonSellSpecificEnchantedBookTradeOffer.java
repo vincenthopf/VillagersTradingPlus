@@ -7,7 +7,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOffers;
@@ -28,24 +29,28 @@ public class JsonSellSpecificEnchantedBookTradeOffer extends JsonTradeOffer {
         ItemStack currency = getItemStackFromJson(json.get("basePriceIn").getAsJsonObject());
 
         Identifier enchantmentId = Identifier.tryParse(readString(json, "enchantment", "minecraft:unbreaking"));
-        Enchantment enchantment = enchantmentId == null ? null : Registries.ENCHANTMENT.get(enchantmentId);
+        // Only the key is resolved here. Enchantments live in a dynamic registry since 1.21, so the
+        // entry itself does not exist until a world is loaded - and deserialization has no world.
+        RegistryKey<Enchantment> enchantmentKey = enchantmentId == null
+                ? null
+                : RegistryKey.of(RegistryKeys.ENCHANTMENT, enchantmentId);
         int level = readInt(json, "level", 1);
 
-        return new Factory(currency, enchantment, level, maxUses, experience, priceMultiplier);
+        return new Factory(currency, enchantmentKey, level, maxUses, experience, priceMultiplier);
     }
 
     private static class Factory implements TradeOffers.Factory {
         private final ItemStack currency;
         @Nullable
-        private final Enchantment enchantment;
+        private final RegistryKey<Enchantment> enchantmentKey;
         private final int level;
         private final int maxUses;
         private final int experience;
         private final float multiplier;
 
-        public Factory(ItemStack currency, @Nullable Enchantment enchantment, int level, int maxUses, int experience, float multiplier) {
+        public Factory(ItemStack currency, @Nullable RegistryKey<Enchantment> enchantmentKey, int level, int maxUses, int experience, float multiplier) {
             this.currency = currency;
-            this.enchantment = enchantment;
+            this.enchantmentKey = enchantmentKey;
             this.level = level;
             this.maxUses = maxUses;
             this.experience = experience;
@@ -54,8 +59,14 @@ public class JsonSellSpecificEnchantedBookTradeOffer extends JsonTradeOffer {
 
         public TradeOffer create(Entity entity, net.minecraft.util.math.random.Random random) {
             ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
-            if (this.enchantment != null) {
-                EnchantedBookItem.addEnchantment(book, new EnchantmentLevelEntry(this.enchantment, this.level));
+            if (this.enchantmentKey != null) {
+                // An unknown id simply yields a blank book rather than losing the whole trade; a
+                // datapack may name an enchantment that this world does not have loaded.
+                entity.getWorld().getRegistryManager()
+                        .get(RegistryKeys.ENCHANTMENT)
+                        .getEntry(this.enchantmentKey)
+                        .ifPresent(enchantment -> EnchantedBookItem.addEnchantment(book,
+                                new EnchantmentLevelEntry(enchantment, this.level)));
             }
             return new TradeOffer(traded(this.currency.copy()), book, this.maxUses, this.experience, this.multiplier);
         }

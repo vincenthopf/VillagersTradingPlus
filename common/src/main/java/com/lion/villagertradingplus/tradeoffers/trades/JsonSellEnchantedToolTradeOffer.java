@@ -45,9 +45,13 @@ public class JsonSellEnchantedToolTradeOffer extends JsonTradeOffer {
 
         public TradeOffer create(Entity entity, net.minecraft.util.math.random.Random random) {
             int power = MIN_POWER + random.nextInt(MAX_POWER - MIN_POWER + 1);
-            ItemStack itemStack = EnchantmentHelper.enchant(random, new ItemStack(this.sell.getItem()), power, false);
+            // The pool of candidate enchantments is passed in explicitly now instead of being implied by
+            // a boolean: #minecraft:in_enchanting_table is what "as an enchanting table would" means.
+            ItemStack itemStack = EnchantmentHelper.enchant(random, new ItemStack(this.sell.getItem()), power,
+                    entity.getWorld().getRegistryManager().get(RegistryKeys.ENCHANTMENT)
+                            .getOrCreateEntryList(EnchantmentTags.IN_ENCHANTING_TABLE).stream());
 
-            return new TradeOffer(new ItemStack(currency.getItem(), price(power)), itemStack,
+            return new TradeOffer(traded(new ItemStack(currency.getItem(), price(power))), itemStack,
                     this.maxUses, this.experience, multiplier);
         }
 

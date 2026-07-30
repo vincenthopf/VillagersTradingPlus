@@ -4,35 +4,38 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.VillagerTradingPlus;
-import net.minecraft.enchantment.Enchantment;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.DyedColorComponent;
+import net.minecraft.component.type.LoreComponent;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.PotionContentsComponent;
-import net.minecraft.item.EnchantedBookItem;
+import net.minecraft.component.type.ProfileComponent;
+import net.minecraft.component.type.WrittenBookContentComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
 import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.potion.Potion;
 import net.minecraft.registry.Registries;
+import net.minecraft.text.RawFilteredPair;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Identifier;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
  * Central item-stack parser for the JSON trade system. Backwards compatible with the original
- * {@code {"item": ..., "count": ...}} shape, plus optional NBT/component sugar:
- * {@code name}, {@code lore}, {@code enchantments}, {@code color}, {@code potion},
- * {@code skull_owner}, {@code book} and a raw {@code nbt} (SNBT) escape hatch applied last.
+ * {@code {"item": ..., "count": ...}} shape, plus optional component sugar:
+ * {@code name}, {@code lore}, {@code color}, {@code potion}, {@code skull_owner}, {@code book} and a
+ * raw {@code nbt} (SNBT) escape hatch applied last.
  *
  * <p>An unresolvable or missing item id raises {@link TradeParseException} so the whole trade is
  * skipped with a logged reason — a blank slot in a villager's trade list is worse than no trade.
- * Malformed sugar (e.g. a bad {@code nbt} string) is still logged and skipped rather than throwing,
- * since the stack itself remains usable.
+ * Malformed sugar is still logged and skipped rather than throwing, since the stack itself remains
+ * usable.
  */
 public final class ItemStackSerializer {
 
@@ -63,7 +66,7 @@ public final class ItemStackSerializer {
     }
 
     /**
-     * Applies the optional NBT/component sugar onto an already-built stack. Public so tag-resolved
+     * Applies the optional component sugar onto an already-built stack. Public so tag-resolved
      * stacks ({@link Ingredient}) can reuse the same sugar per random pick.
      */
     public static void applyComponents(ItemStack stack, JsonObject json) {
@@ -72,7 +75,7 @@ public final class ItemStackSerializer {
         }
 
         if (json.has("name")) {
-            stack.setCustomName(parseText(json.get("name")));
+            stack.set(DataComponentTypes.CUSTOM_NAME, parseText(json.get("name")));
         }
 
         if (json.has("lore")) {
@@ -80,7 +83,14 @@ public final class ItemStackSerializer {
         }
 
         if (json.has("enchantments")) {
-            applyEnchantments(stack, json.getAsJsonArray("enchantments"));
+            // Enchantments are a dynamic registry since 1.21 and cannot be resolved here: parsing
+            // happens on datapack load, where no world - and therefore no registry - exists yet.
+            // The dedicated sell_enchanted_* trade types resolve theirs in create(Entity, Random),
+            // which is where an entity, and with it a registry, is available.
+            VillagerTradingPlus.LOGGER.warn(
+                    "\"enchantments\" on a trade item is not supported on this Minecraft version; "
+                            + "use the sell_enchanted_book / sell_specific_enchanted_tool trade types instead. Item: {}",
+                    json.get("item"));
         }
 
         // No DyeableItem check any more: dyeing is a component, so any item can carry a colour and
@@ -97,7 +107,9 @@ public final class ItemStackSerializer {
         }
 
         if (json.has("skull_owner")) {
-            stack.getOrCreateNbt().putString("SkullOwner", json.get("skull_owner").getAsString());
+            stack.set(DataComponentTypes.PROFILE,
+                    new ProfileComponent(Optional.of(json.get("skull_owner").getAsString()),
+                            Optional.empty(), new com.mojang.authlib.properties.PropertyMap()));
         }
 
         if (json.has("book")) {
@@ -111,52 +123,41 @@ public final class ItemStackSerializer {
     }
 
     private static void applyLore(ItemStack stack, JsonArray lore) {
-        NbtList loreList = new NbtList();
+        List<Text> lines = new ArrayList<>();
         for (JsonElement line : lore) {
-            loreList.add(NbtString.of(Text.Serializer.toJson(parseText(line))));
+            lines.add(parseText(line));
         }
-        stack.getOrCreateSubNbt("display").put("Lore", loreList);
-    }
-
-    private static void applyEnchantments(ItemStack stack, JsonArray enchantments) {
-        boolean isBook = stack.getItem() instanceof EnchantedBookItem;
-        for (JsonElement element : enchantments) {
-            JsonObject obj = element.getAsJsonObject();
-            Enchantment enchantment = Registries.ENCHANTMENT.get(Identifier.tryParse(obj.get("id").getAsString()));
-            if (enchantment == null) {
-                VillagerTradingPlus.LOGGER.error("Unknown enchantment in trade item: " + obj.get("id").getAsString());
-                continue;
-            }
-            int level = obj.has("lvl") ? obj.get("lvl").getAsInt() : 1;
-            if (isBook) {
-                EnchantedBookItem.addEnchantment(stack, new EnchantmentLevelEntry(enchantment, level));
-            } else {
-                stack.addEnchantment(enchantment, level);
-            }
-        }
+        stack.set(DataComponentTypes.LORE, new LoreComponent(lines));
     }
 
     private static void applyBook(ItemStack stack, JsonObject book) {
-        NbtCompound nbt = stack.getOrCreateNbt();
-        if (book.has("title")) {
-            nbt.putString("title", book.get("title").getAsString());
-        }
-        if (book.has("author")) {
-            nbt.putString("author", book.get("author").getAsString());
-        }
+        String title = book.has("title") ? book.get("title").getAsString() : "";
+        String author = book.has("author") ? book.get("author").getAsString() : "";
+
+        List<RawFilteredPair<Text>> pages = new ArrayList<>();
         if (book.has("pages")) {
-            NbtList pages = new NbtList();
             for (JsonElement page : book.getAsJsonArray("pages")) {
-                pages.add(NbtString.of(Text.Serializer.toJson(parseText(page))));
+                pages.add(RawFilteredPair.of(parseText(page)));
             }
-            nbt.put("pages", pages);
         }
+
+        stack.set(DataComponentTypes.WRITTEN_BOOK_CONTENT,
+                new WrittenBookContentComponent(RawFilteredPair.of(title), author, 0, pages, true));
     }
 
+    /**
+     * The raw SNBT hatch now lands in {@code custom_data}.
+     *
+     * <p>This is a genuine narrowing, not a translation: before components, arbitrary NBT written
+     * here was read by the game itself. {@code custom_data} is inert — it round-trips and is visible
+     * to commands and other mods, but vanilla no longer acts on it. Anything that used this hatch to
+     * set attributes, durability or similar has to move to the dedicated keys above.
+     */
     private static void applyRawNbt(ItemStack stack, String snbt) {
         try {
             NbtCompound parsed = StringNbtReader.parse(snbt);
-            stack.getOrCreateNbt().copyFrom(parsed);
+            stack.apply(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT,
+                    existing -> NbtComponent.of(existing.copyNbt().copyFrom(parsed)));
         } catch (Exception e) {
             VillagerTradingPlus.LOGGER.error("Failed to parse trade item nbt: " + snbt, e);
         }
@@ -173,27 +174,25 @@ public final class ItemStackSerializer {
             String raw = element.getAsString();
             String trimmed = raw.trim();
             if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-                try {
-                    Text parsed = Text.Serializer.fromJson(raw);
-                    if (parsed != null) {
-                        return parsed;
-                    }
-                } catch (Exception ignored) {
-                    // fall through to literal
+                Text parsed = decodeText(com.google.gson.JsonParser.parseString(raw));
+                if (parsed != null) {
+                    return parsed;
                 }
             }
             return Text.literal(raw);
         }
 
+        Text parsed = decodeText(element);
+        return parsed != null ? parsed : Text.empty();
+    }
+
+    /** Text.Serializer is gone; component text goes through its codec now. */
+    private static Text decodeText(JsonElement element) {
         try {
-            Text parsed = Text.Serializer.fromJson(element);
-            if (parsed != null) {
-                return parsed;
-            }
+            return TextCodecs.CODEC.parse(JsonOps.INSTANCE, element).result().orElse(null);
         } catch (Exception ignored) {
-            // fall through to empty
+            return null;
         }
-        return Text.empty();
     }
 
     /** Parses a color as an integer or a {@code #RRGGBB} hex string. */

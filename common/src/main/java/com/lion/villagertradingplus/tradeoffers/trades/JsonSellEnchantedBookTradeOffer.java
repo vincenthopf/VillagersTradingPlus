@@ -9,12 +9,16 @@ import net.minecraft.entity.Entity;
 import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.EnchantmentTags;
+import net.minecraft.world.World;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOffers;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,12 +50,15 @@ public class JsonSellEnchantedBookTradeOffer extends JsonTradeOffer {
         }
 
         public TradeOffer create(Entity entity, net.minecraft.util.math.random.Random random) {
-            List<Enchantment> list = available();
-            Enchantment enchantment = list.get(random.nextInt(list.size()));
-            int level = MathHelper.nextInt(random, enchantment.getMinLevel(), enchantment.getMaxLevel());
+            List<RegistryEntry<Enchantment>> list = available(entity.getWorld());
+            if (list.isEmpty()) {
+                return null;
+            }
+            RegistryEntry<Enchantment> enchantment = list.get(random.nextInt(list.size()));
+            int level = MathHelper.nextInt(random, enchantment.value().getMinLevel(), enchantment.value().getMaxLevel());
             int price = clampPrice(2 + random.nextInt(5 + level * 10) + 3 * level, enchantment);
 
-            return new TradeOffer(new ItemStack(currency.getItem(), price), new ItemStack(Items.BOOK),
+            return new TradeOffer(traded(new ItemStack(currency.getItem(), price)), tradedOrEmpty(new ItemStack(Items.BOOK)),
                     book(enchantment, level), 0, this.maxUses, this.experience, this.multiplier, this.demand);
         }
 
@@ -61,12 +68,12 @@ public class JsonSellEnchantedBookTradeOffer extends JsonTradeOffer {
          */
         @Override
         public void expandCatalog(Entity merchant, CatalogBuilder out) {
-            List<Enchantment> available = available();
-            for (Enchantment enchantment : available) {
+            List<RegistryEntry<Enchantment>> available = available(merchant.getWorld());
+            for (RegistryEntry<Enchantment> enchantment : available) {
                 // create() picks an enchantment uniformly, then a level uniformly within it.
-                int levels = enchantment.getMaxLevel() - enchantment.getMinLevel() + 1;
+                int levels = enchantment.value().getMaxLevel() - enchantment.value().getMinLevel() + 1;
                 out.pushShare(1.0f / (available.size() * levels));
-                for (int level = enchantment.getMinLevel(); level <= enchantment.getMaxLevel(); level++) {
+                for (int level = enchantment.value().getMinLevel(); level <= enchantment.value().getMaxLevel(); level++) {
                     if (out.isFull()) {
                         out.countSkipped(1);
                         continue;
@@ -84,18 +91,25 @@ public class JsonSellEnchantedBookTradeOffer extends JsonTradeOffer {
             }
         }
 
-        private static List<Enchantment> available() {
-            return Registries.ENCHANTMENT.stream()
-                    .filter(Enchantment::isAvailableForEnchantedBookOffer)
-                    .collect(Collectors.toList());
+        /**
+         * Which enchantments a villager may sell is data-driven now: the old
+         * isAvailableForEnchantedBookOffer() flag became the #minecraft:tradeable tag, so datapacks
+         * can widen or narrow this list without touching code.
+         */
+        private static List<RegistryEntry<Enchantment>> available(World world) {
+            List<RegistryEntry<Enchantment>> list = new ArrayList<>();
+            world.getRegistryManager().get(RegistryKeys.ENCHANTMENT).streamEntries()
+                    .filter(entry -> entry.isIn(EnchantmentTags.TRADEABLE))
+                    .forEach(list::add);
+            return list;
         }
 
-        private static ItemStack book(Enchantment enchantment, int level) {
+        private static ItemStack book(RegistryEntry<Enchantment> enchantment, int level) {
             return EnchantedBookItem.forEnchantment(new EnchantmentLevelEntry(enchantment, level));
         }
 
-        private static int clampPrice(int price, Enchantment enchantment) {
-            if (enchantment.isTreasure()) {
+        private static int clampPrice(int price, RegistryEntry<Enchantment> enchantment) {
+            if (enchantment.isIn(EnchantmentTags.DOUBLE_TRADE_PRICE)) {
                 price *= 2;
             }
             return Math.min(price, 64);
