@@ -13,6 +13,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 public class TradeOfferManager {
@@ -43,6 +45,51 @@ public class TradeOfferManager {
         tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_tagged_item"), new JsonSellTaggedItemTradeOffer());
         tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"sell_enchanted_book_from_list"), new JsonSellEnchantedBookFromListTradeOffer());
         tradeOfferRegistry.put(new Identifier(VillagerTradingPlus.MOD_ID,"multi_input"), new JsonMultiInputTradeOffer());
+    }
+
+    /**
+     * Namespace the trade types used before this system became a library. Files written against
+     * VillagersPlus name their types {@code villagersplus:sell_item} and so on, and there is no way
+     * for their authors to know that the types have a new home - so those ids keep resolving here.
+     */
+    private static final String LEGACY_NAMESPACE = "villagersplus";
+
+    /** Legacy type ids already warned about, so a big datapack logs each one once and not per trade. */
+    private static final Set<String> REPORTED_LEGACY_TYPES = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Resolves a trade type, accepting three spellings: the canonical
+     * {@code villagertradingplus:sell_item}, a bare {@code sell_item}, and the legacy
+     * {@code villagersplus:sell_item}.
+     */
+    @Nullable
+    private static JsonTradeOffer findAdapter(String type) {
+        Identifier id = Identifier.tryParse(type);
+        if (id == null) {
+            return null;
+        }
+
+        JsonTradeOffer adapter = tradeOfferRegistry.get(id);
+        if (adapter != null) {
+            return adapter;
+        }
+
+        // A bare "sell_item" parses as minecraft:sell_item, which is never what the author meant.
+        if (type.indexOf(':') < 0) {
+            return tradeOfferRegistry.get(new Identifier(VillagerTradingPlus.MOD_ID, id.getPath()));
+        }
+
+        if (LEGACY_NAMESPACE.equals(id.getNamespace())) {
+            adapter = tradeOfferRegistry.get(new Identifier(VillagerTradingPlus.MOD_ID, id.getPath()));
+            if (adapter != null && REPORTED_LEGACY_TYPES.add(type)) {
+                VillagerTradingPlus.LOGGER.warn(
+                        "Trade type '{}' still uses the old namespace; it now lives at '{}:{}'. Still accepted, but please update the file.",
+                        type, VillagerTradingPlus.MOD_ID, id.getPath());
+            }
+            return adapter;
+        }
+
+        return null;
     }
 
     public static void deserializeJson(JsonObject jsonRoot) {
@@ -118,7 +165,7 @@ public class TradeOfferManager {
     @Nullable
     public static TradeOffers.Factory deserializeTrade(JsonObject trade) {
         String type = readString(trade, "type");
-        JsonTradeOffer adapter = tradeOfferRegistry.get(Identifier.tryParse(type));
+        JsonTradeOffer adapter = findAdapter(type);
         if (adapter == null) {
             VillagerTradingPlus.LOGGER.warn("Skipping trade with unknown type '{}'.", type);
             return null;
