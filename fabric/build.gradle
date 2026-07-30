@@ -11,12 +11,6 @@ architectury {
 	fabric()
 }
 
-// Fabric reads SemVer, where everything after "+" is build metadata: it is shown in the mod list but
-// ignored when a dependency range is tested, so ">=1.0.0" still matches this build. Writing it with a
-// "-" instead would mark the build a PRERELEASE and drop it out of that very range.
-// Forge needs the opposite treatment - see forge/build.gradle.
-version = "${rootProject.mod_version}+mc${rootProject.minecraft_version}"
-
 configurations {
 	common
 	shadowCommon // Don't use shadow from the shadow plugin since it *excludes* files.
@@ -59,8 +53,6 @@ remapJar {
 	input.set shadowJar.archiveFile
 	dependsOn shadowJar
 	classifier null
-	// Spelled out rather than left to the version string, so both loaders ship the same file name
-	// shape even though their version fields have to differ.
 	archiveFileName = "${rootProject.mod_id}-${project.name}-mc${rootProject.minecraft_version}-${rootProject.mod_version}.jar"
 }
 

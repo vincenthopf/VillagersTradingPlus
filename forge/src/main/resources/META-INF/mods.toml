@@ -5,7 +5,7 @@ license = "CC0-1.0"
 [[mods]]
 modId = "villagertradingplus"
 version = "${version}"
-displayName = "VillagerTradingPlus (MC ${minecraft_version})"
+displayName = "VillagerTradingPlus"
 authors = "Lion"
 description = '''
 A library for defining villager and wandering trader trades in JSON, with conditions, dynamic pricing and an in-game trade catalog.

@@ -19,12 +19,6 @@ architectury {
 	forge()
 }
 
-// Forge compares Maven versions, not SemVer, and there anything trailing the third number wrecks the
-// parse: "1.0.0+mc1.20.1" comes out as major version 0 and stops satisfying "[1.0.0,)" entirely,
-// while "1.0.0-mc1.20.1" sorts BELOW plain 1.0.0 and fails the same range from the other side. So the
-// version field stays bare here; the Minecraft version rides in the file name and the display name.
-version = rootProject.mod_version
-
 configurations {
 	common
 	shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
@@ -42,10 +36,9 @@ dependencies {
 
 processResources {
 	inputs.property "version", project.version
-	inputs.property "minecraft_version", rootProject.minecraft_version
 
 	filesMatching("META-INF/mods.toml") {
-		expand "version": project.version, "minecraft_version": rootProject.minecraft_version
+		expand "version": project.version
 	}
 }
 
@@ -61,8 +54,6 @@ remapJar {
 	input.set shadowJar.archiveFile
 	dependsOn shadowJar
 	classifier null
-	// Spelled out rather than left to the version string, so both loaders ship the same file name
-	// shape even though their version fields have to differ.
 	archiveFileName = "${rootProject.mod_id}-${project.name}-mc${rootProject.minecraft_version}-${rootProject.mod_version}.jar"
 }
 
