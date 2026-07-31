@@ -90,8 +90,10 @@ public final class TradeGuiActions {
         int level = MathHelper.clamp(requestedLevel, 1, maxLevel);
 
         CatalogBuilder builder = buildCatalog(merchant, level);
-        NetworkHelper.sendToPlayer(player, TradeCatalogPacket.CHANNEL,
-                TradeCatalogPacket.write(level, maxLevel, builder.entries(), builder.skipped()));
+        // One catalogue goes out as several packets; they arrive in order and the client reassembles.
+        TradeCatalogPacket.write(player.server.getRegistryManager(), level, maxLevel,
+                        builder.entries(), builder.skipped())
+                .forEach(slice -> NetworkHelper.sendToPlayer(player, slice));
     }
 
     /** Villagers have five tiers; the wandering trader has two pools (common, rare). */

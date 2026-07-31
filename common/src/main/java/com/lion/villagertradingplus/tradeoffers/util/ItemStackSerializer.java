@@ -4,19 +4,34 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.VillagerTradingPlus;
+import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.JsonOps;
+import net.minecraft.SharedConstants;
+import net.minecraft.component.ComponentChanges;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.DyedColorComponent;
+import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.component.type.LoreComponent;
-import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.component.type.WrittenBookContentComponent;
+import net.minecraft.datafixer.Schemas;
+import net.minecraft.datafixer.TypeReferences;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryOps;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.RawFilteredPair;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextCodecs;
@@ -29,8 +44,8 @@ import java.util.Optional;
 /**
  * Central item-stack parser for the JSON trade system. Backwards compatible with the original
  * {@code {"item": ..., "count": ...}} shape, plus optional component sugar:
- * {@code name}, {@code lore}, {@code color}, {@code potion}, {@code skull_owner}, {@code book} and a
- * raw {@code nbt} (SNBT) escape hatch applied last.
+ * {@code name}, {@code lore}, {@code enchantments}, {@code color}, {@code potion},
+ * {@code skull_owner}, {@code book} and a raw {@code nbt} (SNBT) escape hatch applied last.
  *
  * <p>An unresolvable or missing item id raises {@link TradeParseException} so the whole trade is
  * skipped with a logged reason — a blank slot in a villager's trade list is worse than no trade.
@@ -83,14 +98,7 @@ public final class ItemStackSerializer {
         }
 
         if (json.has("enchantments")) {
-            // Enchantments are a dynamic registry since 1.21 and cannot be resolved here: parsing
-            // happens on datapack load, where no world - and therefore no registry - exists yet.
-            // The dedicated sell_enchanted_* trade types resolve theirs in create(Entity, Random),
-            // which is where an entity, and with it a registry, is available.
-            VillagerTradingPlus.LOGGER.warn(
-                    "\"enchantments\" on a trade item is not supported on this Minecraft version; "
-                            + "use the sell_enchanted_book / sell_specific_enchanted_tool trade types instead. Item: {}",
-                    json.get("item"));
+            applyEnchantments(stack, json.getAsJsonArray("enchantments"));
         }
 
         // No DyeableItem check any more: dyeing is a component, so any item can carry a colour and
@@ -122,6 +130,63 @@ public final class ItemStackSerializer {
         }
     }
 
+    /**
+     * Applies {@code "enchantments": [ { "id": "minecraft:looting", "lvl": 3 } ]} - the same shape as
+     * before components, since the JSON is a public format.
+     *
+     * <p>An id no longer names an enchantment on its own: they are a dynamic registry since 1.21 and
+     * have to be looked up in the one loaded for this world. {@link DatapackRegistries} holds it, and
+     * it is populated well before any trade file is read, so this still resolves at parse time and the
+     * result is a normal component on the stack - which means the buy side keeps working too, because
+     * {@code JsonTradeOffer.traded} folds the stack's components into the match rule.
+     *
+     * <p>An unknown enchantment id costs its own entry, not the trade: a datapack may name one this
+     * world does not have loaded.
+     */
+    private static void applyEnchantments(ItemStack stack, JsonArray enchantments) {
+        Optional<Registry<Enchantment>> registry = DatapackRegistries.registry(RegistryKeys.ENCHANTMENT);
+        if (registry.isEmpty()) {
+            VillagerTradingPlus.LOGGER.error(
+                    "Cannot resolve \"enchantments\" on a trade item: no datapack registries are loaded. "
+                            + "The item stays unenchanted.");
+            return;
+        }
+
+        // Built on top of what the stack already carries so repeated application accumulates instead
+        // of overwriting - a tag-resolved Ingredient re-applies this sugar per random pick.
+        ItemEnchantmentsComponent.Builder builder =
+                new ItemEnchantmentsComponent.Builder(EnchantmentHelper.getEnchantments(stack));
+        boolean applied = false;
+
+        for (JsonElement element : enchantments) {
+            JsonObject entry = element.getAsJsonObject();
+            if (!entry.has("id")) {
+                VillagerTradingPlus.LOGGER.error("Enchantment on a trade item is missing its \"id\": {}", entry);
+                continue;
+            }
+
+            String id = entry.get("id").getAsString();
+            Identifier identifier = Identifier.tryParse(id);
+            Optional<RegistryEntry.Reference<Enchantment>> enchantment = identifier == null
+                    ? Optional.empty()
+                    : registry.get().getEntry(RegistryKey.of(RegistryKeys.ENCHANTMENT, identifier));
+
+            if (enchantment.isEmpty()) {
+                VillagerTradingPlus.LOGGER.error("Unknown enchantment in trade item: {}", id);
+                continue;
+            }
+
+            builder.set(enchantment.get(), entry.has("lvl") ? entry.get("lvl").getAsInt() : 1);
+            applied = true;
+        }
+
+        if (applied) {
+            // Routes to stored_enchantments on an enchanted book and to enchantments on anything else,
+            // which is the split the old EnchantedBookItem fork did by hand.
+            EnchantmentHelper.set(stack, builder.build());
+        }
+    }
+
     private static void applyLore(ItemStack stack, JsonArray lore) {
         List<Text> lines = new ArrayList<>();
         for (JsonElement line : lore) {
@@ -146,21 +211,71 @@ public final class ItemStackSerializer {
     }
 
     /**
-     * The raw SNBT hatch now lands in {@code custom_data}.
+     * The raw SNBT hatch keeps working exactly as it did before components: {@code {Unbreakable:1b}}
+     * still makes the item unbreakable, {@code {Damage:100}} still damages it, {@code display}, an
+     * {@code AttributeModifiers} list, {@code CustomModelData}, {@code HideFlags},
+     * {@code BlockEntityTag} and the rest all still land where they belong.
      *
-     * <p>This is a genuine narrowing, not a translation: before components, arbitrary NBT written
-     * here was read by the game itself. {@code custom_data} is inert — it round-trips and is visible
-     * to commands and other mods, but vanilla no longer acts on it. Anything that used this hatch to
-     * set attributes, durability or similar has to move to the dedicated keys above.
+     * <p>Not by a hand-written translation table - by running the tag through <em>Mojang's own data
+     * fixer</em>, the same {@code ItemStackComponentizationFix} that converts a 1.20.4 world on first
+     * load. The input is dressed up as a pre-component item stack
+     * ({@code {id, Count, tag}}, the shape {@code StackData.fromDynamic} expects), updated to the
+     * current data version, and read back with {@link ItemStack#CODEC}. Whatever the fixer does not
+     * recognise it leaves in {@code custom_data} by itself, which is where unknown keys used to end up
+     * anyway.
+     *
+     * <p>Two consequences worth knowing: the translation is always as complete and as correct as
+     * vanilla's own, including every future version's rules; and old item ids in the tag get renamed
+     * along the way, because the fixer chain from 1.20.1 onwards runs in full.
+     *
+     * <p>Applied as a component patch on top of the sugar above, so this hatch keeps overriding it.
      */
     private static void applyRawNbt(ItemStack stack, String snbt) {
         try {
             NbtCompound parsed = StringNbtReader.parse(snbt);
-            stack.apply(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT,
-                    existing -> NbtComponent.of(existing.copyNbt().copyFrom(parsed)));
+            componentize(stack, parsed).ifPresent(stack::applyChanges);
         } catch (Exception e) {
             VillagerTradingPlus.LOGGER.error("Failed to parse trade item nbt: " + snbt, e);
         }
+    }
+
+    /**
+     * Base version the raw tag is interpreted as. 1.20.1 is where this JSON format was last written
+     * against a game that still read item NBT directly, so that is what the strings in the wild mean.
+     * The exact value is not critical - anything below the componentization schema (3818) runs it -
+     * but a lower one also picks up the item renames from 1.20.2 through 1.20.4.
+     */
+    private static final int RAW_NBT_DATA_VERSION = 3465;
+
+    private static Optional<ComponentChanges> componentize(ItemStack stack, NbtCompound tag) {
+        Optional<RegistryWrapper.WrapperLookup> lookup = DatapackRegistries.lookup();
+        if (lookup.isEmpty()) {
+            VillagerTradingPlus.LOGGER.error(
+                    "Cannot convert the \"nbt\" of a trade item: no datapack registries are loaded. "
+                            + "The item is used without it.");
+            return Optional.empty();
+        }
+
+        NbtCompound old = new NbtCompound();
+        old.putString("id", Registries.ITEM.getId(stack.getItem()).toString());
+        // The count is carried by the stack, not by this patch - a fixed 1 keeps it inside the range
+        // ItemStack.CODEC accepts no matter how large the trade's own count is.
+        old.putInt("Count", 1);
+        old.put("tag", tag);
+
+        Dynamic<NbtElement> fixed = Schemas.getFixer().update(
+                TypeReferences.ITEM_STACK,
+                new Dynamic<>(NbtOps.INSTANCE, old),
+                RAW_NBT_DATA_VERSION,
+                SharedConstants.getGameVersion().getSaveVersion().getId());
+
+        // Components can reference dynamic registries (an enchantment, a potion), so plain NbtOps is
+        // not enough to read the fixed stack back.
+        RegistryOps<NbtElement> ops = RegistryOps.of(NbtOps.INSTANCE, lookup.get());
+        return ItemStack.CODEC.parse(ops, fixed.getValue())
+                .resultOrPartial(error -> VillagerTradingPlus.LOGGER.error(
+                        "Could not read the converted \"nbt\" of a trade item: {}", error))
+                .map(ItemStack::getComponentChanges);
     }
 
     /**

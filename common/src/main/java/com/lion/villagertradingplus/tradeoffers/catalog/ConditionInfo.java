@@ -1,7 +1,8 @@
 package com.lion.villagertradingplus.tradeoffers.catalog;
 
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextCodecs;
 
 /**
  * One condition attached to a catalogued trade: what it requires, and whether it holds right now for
@@ -13,12 +14,12 @@ import net.minecraft.text.Text;
  */
 public record ConditionInfo(Text description, boolean satisfied) {
 
-    public void write(PacketByteBuf buf) {
-        buf.writeText(this.description);
+    public void write(RegistryByteBuf buf) {
+        TextCodecs.REGISTRY_PACKET_CODEC.encode(buf, this.description);
         buf.writeBoolean(this.satisfied);
     }
 
-    public static ConditionInfo read(PacketByteBuf buf) {
-        return new ConditionInfo(buf.readText(), buf.readBoolean());
+    public static ConditionInfo read(RegistryByteBuf buf) {
+        return new ConditionInfo(TextCodecs.REGISTRY_PACKET_CODEC.decode(buf), buf.readBoolean());
     }
 }

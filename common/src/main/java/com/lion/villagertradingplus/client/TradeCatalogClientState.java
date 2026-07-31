@@ -4,6 +4,7 @@ import com.lion.villagertradingplus.platform.NetworkHelper;
 import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPacket;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -17,6 +18,12 @@ import org.jetbrains.annotations.Nullable;
 @Environment(EnvType.CLIENT)
 public final class TradeCatalogClientState {
 
+    /**
+     * A catalogue arrives in slices, so the reply is assembled here before it becomes visible. Safe
+     * as a single instance for the same reason as the field below: one screen, one transfer.
+     */
+    private static final TradeCatalogPacket.Reassembler REASSEMBLER = new TradeCatalogPacket.Reassembler();
+
     @Nullable
     private static TradeCatalogPacket.Payload current;
 
@@ -27,9 +34,21 @@ public final class TradeCatalogClientState {
     }
 
     public static void register() {
-        NetworkHelper.registerClientReceiver(TradeCatalogPacket.CHANNEL, buf -> {
-            current = TradeCatalogPacket.read(buf);
-            awaitingReply = false;
+        NetworkHelper.registerCatalogReceiver(slice -> {
+            // The registries are the client world's: reading a catalogue means reading item stacks,
+            // which resolve components against them.
+            if (MinecraftClient.getInstance().world == null) {
+                return;
+            }
+
+            TradeCatalogPacket.Payload payload =
+                    REASSEMBLER.accept(slice, MinecraftClient.getInstance().world.getRegistryManager());
+
+            // Nothing to show until the last slice lands; the panel keeps its placeholder until then.
+            if (payload != null) {
+                current = payload;
+                awaitingReply = false;
+            }
         });
     }
 

@@ -1,5 +1,7 @@
 modLoader = "javafml"
-loaderVersion = "[37,)"
+# NeoForge's javafml, not Forge's — NeoForge 21.1 declares [3,] for itself, so [3,) accepts it and
+# anything newer. The old Forge numbering ([37,)) matches nothing here and refuses to load.
+loaderVersion = "[3,)"
 license = "CC0-1.0"
 
 [[mods]]
@@ -12,15 +14,16 @@ A library for defining villager and wandering trader trades in JSON, with condit
 '''
 
 [[dependencies.villagertradingplus]]
-modId = "forge"
-mandatory = true
-versionRange = "[41.0.22,)"
+modId = "neoforge"
+# "mandatory" was replaced by "type" in the 1.20.5 loader generation.
+type = "required"
+versionRange = "[21.1.0,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.villagertradingplus]]
 modId = "minecraft"
-mandatory = true
-versionRange = "[1.20,)"
+type = "required"
+versionRange = "[1.21.1,1.22)"
 ordering = "NONE"
 side = "BOTH"

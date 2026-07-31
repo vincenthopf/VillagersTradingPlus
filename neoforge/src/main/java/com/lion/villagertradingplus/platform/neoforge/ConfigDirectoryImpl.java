@@ -1,6 +1,6 @@
 package com.lion.villagertradingplus.platform.neoforge;
 
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
 

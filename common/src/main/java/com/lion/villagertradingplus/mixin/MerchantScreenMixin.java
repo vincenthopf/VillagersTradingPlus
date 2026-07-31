@@ -196,15 +196,20 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     /**
      * Vanilla's {@code mouseScrolled} scrolls the trade list from anywhere on screen — it does no
      * bounds check and never calls {@code super} — so the panel has to claim the wheel explicitly.
+     *
+     * <p>Four parameters since 1.20.5: the wheel reports a horizontal axis as well. The panel is a
+     * vertical list, so it reads {@code verticalAmount}, which is also the only axis vanilla's own
+     * trade list looks at.
      */
     @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
-    private void villagertradingplus$catalogScroll(double mouseX, double mouseY, double amount, CallbackInfoReturnable<Boolean> cir) {
+    private void villagertradingplus$catalogScroll(double mouseX, double mouseY, double horizontalAmount,
+                                                  double verticalAmount, CallbackInfoReturnable<Boolean> cir) {
         if (this.villagertradingplus$catalog == null) {
             return;
         }
         villagertradingplus$layoutCatalog();
         if (this.villagertradingplus$catalog.isOver(mouseX, mouseY)) {
-            this.villagertradingplus$catalog.mouseScrolled(amount);
+            this.villagertradingplus$catalog.mouseScrolled(verticalAmount);
             cir.setReturnValue(true);
         }
     }
