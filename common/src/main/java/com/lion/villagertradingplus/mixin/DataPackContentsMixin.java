@@ -1,10 +1,15 @@
 package com.lion.villagertradingplus.mixin;
 
 import com.lion.villagertradingplus.tradeoffers.util.DatapackRegistries;
-import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.registry.CombinedDynamicRegistries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.registry.ServerDynamicRegistryType;
 import net.minecraft.resource.featuretoggle.FeatureSet;
 import net.minecraft.server.DataPackContents;
 import net.minecraft.server.command.CommandManager;
+
+import java.util.List;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,13 +28,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(DataPackContents.class)
 public class DataPackContentsMixin {
 
+    /**
+     * The parameter list has to match the constructor exactly, and Mixin only checks that when it
+     * applies the injection - a stale signature builds green and then kills the game at startup with
+     * "Invalid descriptor". As of 1.21.6 the constructor takes the combined registries plus a
+     * wrapper lookup and a list of pending tag loads, where it used to take one immutable manager.
+     */
     @Inject(method = "<init>", at = @At("RETURN"))
     private void villagertradingplus$captureDatapackRegistries(
-            DynamicRegistryManager.Immutable dynamicRegistryManager,
+            CombinedDynamicRegistries<ServerDynamicRegistryType> dynamicRegistries,
+            RegistryWrapper.WrapperLookup registries,
             FeatureSet enabledFeatures,
             CommandManager.RegistrationEnvironment environment,
+            List<Registry.PendingTagLoad<?>> pendingTagLoads,
             int functionPermissionLevel,
             CallbackInfo ci) {
-        DatapackRegistries.set(dynamicRegistryManager);
+        DatapackRegistries.set(dynamicRegistries.getCombinedRegistryManager());
     }
 }
