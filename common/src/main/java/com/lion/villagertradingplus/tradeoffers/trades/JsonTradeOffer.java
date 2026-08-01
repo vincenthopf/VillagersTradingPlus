@@ -6,7 +6,10 @@ import com.lion.villagertradingplus.tradeoffers.util.ItemStackSerializer;
 import net.minecraft.component.ComponentChanges;
 import net.minecraft.component.ComponentType;
 import net.minecraft.item.ItemStack;
-import net.minecraft.predicate.ComponentPredicate;
+// 1.21.6 renamed this and moved it into the component package. The name ComponentPredicate still
+// exists there but is an unrelated interface now, so importing the old name compiles to nothing
+// useful.
+import net.minecraft.predicate.component.ComponentMapPredicate;
 import net.minecraft.util.Identifier;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOffers;
@@ -70,7 +73,7 @@ public abstract class JsonTradeOffer {
     // The component type and its value are a matched pair by construction, but ComponentChanges
     // erases that link to ComponentType<?> plus Optional<?>, so the cast cannot be avoided here.
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void addChanges(ComponentPredicate.Builder builder, ComponentChanges changes) {
+    private static void addChanges(ComponentMapPredicate.Builder builder, ComponentChanges changes) {
         for (Map.Entry<ComponentType<?>, Optional<?>> entry : changes.entrySet()) {
             // A *removed* component has no predicate equivalent - only presence can be demanded.
             entry.getValue().ifPresent(value -> builder.add((ComponentType) entry.getKey(), value));

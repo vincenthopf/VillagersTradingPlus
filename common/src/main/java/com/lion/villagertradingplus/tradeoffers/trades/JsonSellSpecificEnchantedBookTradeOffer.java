@@ -2,9 +2,9 @@ package com.lion.villagertradingplus.tradeoffers.trades;
 
 import com.google.gson.JsonObject;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.Entity;
-import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
@@ -67,7 +67,7 @@ public class JsonSellSpecificEnchantedBookTradeOffer extends JsonTradeOffer {
                     : entity.getWorld().getRegistryManager()
                             .get(RegistryKeys.ENCHANTMENT)
                             .getEntry(this.enchantmentKey)
-                            .map(enchantment -> EnchantedBookItem.forEnchantment(
+                            .map(enchantment -> EnchantmentHelper.getEnchantedBookWith(
                                     new EnchantmentLevelEntry(enchantment, this.level)))
                             .orElseGet(() -> new ItemStack(Items.ENCHANTED_BOOK));
 

@@ -4,9 +4,9 @@ import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpandable;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.Entity;
-import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKeys;
@@ -105,7 +105,7 @@ public class JsonSellEnchantedBookTradeOffer extends JsonTradeOffer {
         }
 
         private static ItemStack book(RegistryEntry<Enchantment> enchantment, int level) {
-            return EnchantedBookItem.forEnchantment(new EnchantmentLevelEntry(enchantment, level));
+            return EnchantmentHelper.getEnchantedBookWith(new EnchantmentLevelEntry(enchantment, level));
         }
 
         private static int clampPrice(int price, RegistryEntry<Enchantment> enchantment) {

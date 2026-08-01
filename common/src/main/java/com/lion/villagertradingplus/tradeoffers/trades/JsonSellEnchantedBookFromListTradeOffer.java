@@ -7,9 +7,9 @@ import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpandable;
 import com.lion.villagertradingplus.tradeoffers.util.DatapackRegistries;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.Entity;
-import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registry;
@@ -193,7 +193,7 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
         }
 
         private ItemStack book(RegistryEntry<Enchantment> enchantment, int level) {
-            return EnchantedBookItem.forEnchantment(new EnchantmentLevelEntry(enchantment, level));
+            return EnchantmentHelper.getEnchantedBookWith(new EnchantmentLevelEntry(enchantment, level));
         }
 
         private int cost(RegistryEntry<Enchantment> enchantment, int level) {
