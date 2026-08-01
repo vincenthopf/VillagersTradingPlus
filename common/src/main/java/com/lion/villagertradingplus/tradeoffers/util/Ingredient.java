@@ -57,7 +57,7 @@ public final class Ingredient {
             return fixed.copy();
         }
 
-        Optional<RegistryEntryList.Named<net.minecraft.item.Item>> entries = Registries.ITEM.getEntryList(tag);
+        Optional<RegistryEntryList.Named<net.minecraft.item.Item>> entries = Registries.ITEM.getOptional(tag);
         if (entries.isEmpty() || entries.get().size() == 0) {
             return ItemStack.EMPTY;
         }
@@ -76,7 +76,7 @@ public final class Ingredient {
             return List.of(fixed.copy());
         }
 
-        Optional<RegistryEntryList.Named<net.minecraft.item.Item>> entries = Registries.ITEM.getEntryList(tag);
+        Optional<RegistryEntryList.Named<net.minecraft.item.Item>> entries = Registries.ITEM.getOptional(tag);
         if (entries.isEmpty()) {
             return List.of();
         }

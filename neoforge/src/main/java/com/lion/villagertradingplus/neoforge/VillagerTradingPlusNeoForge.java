@@ -11,7 +11,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.minecraft.util.Identifier;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 
 @Mod(VillagerTradingPlus.MOD_ID)
 public class VillagerTradingPlusNeoForge {
@@ -32,9 +33,14 @@ public class VillagerTradingPlusNeoForge {
         NeoForge.EVENT_BUS.addListener(VillagerTradingPlusNeoForge::registerResourceReloader);
     }
 
-    private static void registerResourceReloader(AddReloadListenerEvent event) {
-        event.addListener(new DefaultTradeOfferResourceListener());
-        event.addListener(new TradeOfferResourceListener());
-        event.addListener(new WanderingTraderTradeOfferResourceListener());
+    // Renamed from AddReloadListenerEvent, and listeners are now keyed so NeoForge can order them.
+    // The ids mirror the getFabricId() values the Fabric side registers under.
+    private static void registerResourceReloader(AddServerReloadListenersEvent event) {
+        event.addListener(Identifier.of(VillagerTradingPlus.MOD_ID, "default_villager_data_loader"),
+                new DefaultTradeOfferResourceListener());
+        event.addListener(Identifier.of(VillagerTradingPlus.MOD_ID, "villager_data_loader"),
+                new TradeOfferResourceListener());
+        event.addListener(Identifier.of(VillagerTradingPlus.MOD_ID, "wandering_trader_data_loader"),
+                new WanderingTraderTradeOfferResourceListener());
     }
 }

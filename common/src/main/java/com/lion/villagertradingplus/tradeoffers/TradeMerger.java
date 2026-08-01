@@ -3,6 +3,7 @@ package com.lion.villagertradingplus.tradeoffers;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.village.TradeOffers;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.village.VillagerProfession;
 
 import java.util.Arrays;
@@ -26,7 +27,7 @@ public final class TradeMerger {
      * merged one reload ago - and the pool grew on every {@code /reload} and on every re-entry into a
      * world within the same session. Restoring this baseline first makes merging idempotent.
      */
-    private static final Map<VillagerProfession, Int2ObjectMap<TradeOffers.Factory[]>> VANILLA_BASELINE = new HashMap<>();
+    private static final Map<RegistryKey<VillagerProfession>, Int2ObjectMap<TradeOffers.Factory[]>> VANILLA_BASELINE = new HashMap<>();
 
     private TradeMerger() {
     }
@@ -58,7 +59,7 @@ public final class TradeMerger {
     }
 
     /** Records what was in the vanilla map before the first append, and only then. */
-    private static void rememberBaseline(VillagerProfession profession, int level, TradeOffers.Factory[] existing) {
+    private static void rememberBaseline(RegistryKey<VillagerProfession> profession, int level, TradeOffers.Factory[] existing) {
         Int2ObjectMap<TradeOffers.Factory[]> levels =
                 VANILLA_BASELINE.computeIfAbsent(profession, ignored -> new Int2ObjectOpenHashMap<>());
         if (!levels.containsKey(level)) {

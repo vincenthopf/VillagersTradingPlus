@@ -65,8 +65,8 @@ public class JsonSellSpecificEnchantedBookTradeOffer extends JsonTradeOffer {
             ItemStack book = this.enchantmentKey == null
                     ? new ItemStack(Items.ENCHANTED_BOOK)
                     : entity.getWorld().getRegistryManager()
-                            .get(RegistryKeys.ENCHANTMENT)
-                            .getEntry(this.enchantmentKey)
+                            .getOrThrow(RegistryKeys.ENCHANTMENT)
+                            .getOptional(this.enchantmentKey)
                             .map(enchantment -> EnchantmentHelper.getEnchantedBookWith(
                                     new EnchantmentLevelEntry(enchantment, this.level)))
                             .orElseGet(() -> new ItemStack(Items.ENCHANTED_BOOK));

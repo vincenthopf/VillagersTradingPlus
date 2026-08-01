@@ -68,7 +68,7 @@ public final class ItemStackSerializer {
         }
 
         String id = idElement.getAsString();
-        Optional<Item> item = Registries.ITEM.getOrEmpty(Identifier.tryParse(id));
+        Optional<Item> item = Registries.ITEM.getOptionalValue(Identifier.tryParse(id));
         if (item.isEmpty()) {
             throw new TradeParseException("unknown item id \"" + id
                     + "\" (is the mod that provides it installed?)");
@@ -105,7 +105,7 @@ public final class ItemStackSerializer {
         // the game simply ignores it on items that do not render one.
         if (json.has("color")) {
             stack.set(DataComponentTypes.DYED_COLOR,
-                    new DyedColorComponent(parseColor(json.get("color").getAsString()), true));
+                    new DyedColorComponent(parseColor(json.get("color").getAsString())));
         }
 
         if (json.has("potion")) {
@@ -169,7 +169,7 @@ public final class ItemStackSerializer {
             Identifier identifier = Identifier.tryParse(id);
             Optional<RegistryEntry.Reference<Enchantment>> enchantment = identifier == null
                     ? Optional.empty()
-                    : registry.get().getEntry(RegistryKey.of(RegistryKeys.ENCHANTMENT, identifier));
+                    : registry.get().getOptional(RegistryKey.of(RegistryKeys.ENCHANTMENT, identifier));
 
             if (enchantment.isEmpty()) {
                 VillagerTradingPlus.LOGGER.error("Unknown enchantment in trade item: {}", id);
@@ -232,7 +232,7 @@ public final class ItemStackSerializer {
      */
     private static void applyRawNbt(ItemStack stack, String snbt) {
         try {
-            NbtCompound parsed = StringNbtReader.parse(snbt);
+            NbtCompound parsed = StringNbtReader.readCompound(snbt);
             componentize(stack, parsed).ifPresent(stack::applyChanges);
         } catch (Exception e) {
             VillagerTradingPlus.LOGGER.error("Failed to parse trade item nbt: " + snbt, e);
@@ -267,7 +267,7 @@ public final class ItemStackSerializer {
                 TypeReferences.ITEM_STACK,
                 new Dynamic<>(NbtOps.INSTANCE, old),
                 RAW_NBT_DATA_VERSION,
-                SharedConstants.getGameVersion().getSaveVersion().getId());
+                SharedConstants.getGameVersion().dataVersion().id());
 
         // Components can reference dynamic registries (an enchantment, a potion), so plain NbtOps is
         // not enough to read the fixed stack back.

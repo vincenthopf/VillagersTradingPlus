@@ -1,9 +1,13 @@
 package com.lion.villagertradingplus.tradeoffers;
 
+import com.lion.villagertradingplus.VillagerTradingPlus;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.village.TradeOffers;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Merges mod-defined JSON trades into the vanilla wandering-trader pool
@@ -22,6 +27,12 @@ import java.util.Set;
  * to swap out the vanilla trades for a tier instead of adding to them; a tier is never left empty
  * (that would crash vanilla's rare-pick), so replacing a tier you defined no trades for keeps
  * vanilla.
+ *
+ * <p><b>Since 1.21.6 the merged pool is served, not written back.</b> Vanilla used to expose an
+ * {@code Int2ObjectMap} that could be mutated in place; it is now an <em>immutable</em>
+ * {@code List<Pair<Factory[], Integer>>} where the {@code Integer} is how many offers to draw from
+ * that pool. So the result is kept here and {@code WanderingTraderMixin} redirects vanilla's field
+ * read to it. Nothing writes to the vanilla list.
  */
 public final class WanderingTraderTradeLoader {
 
@@ -33,15 +44,32 @@ public final class WanderingTraderTradeLoader {
         LEVEL_MAPPING.put("rare", 2);
     }
 
+    /** Vanilla pools by level (1-based), snapshotted once. */
     private static Int2ObjectMap<TradeOffers.Factory[]> vanillaBaseline = null;
+    /** Vanilla's own draw count per level, so a tier we never touch keeps its vanilla behaviour. */
+    private static Int2IntMap vanillaCounts = null;
+
     private static final Map<Integer, List<TradeOffers.Factory>> accumulator = new HashMap<>();
     private static boolean replaceVanilla = false;
+
+    /** Merged pools by level. Null until the first reload has run. */
+    private static volatile Int2ObjectMap<TradeOffers.Factory[]> mergedPools = null;
 
     private WanderingTraderTradeLoader() {}
 
     private static void ensureBaseline() {
-        if (vanillaBaseline == null) {
-            vanillaBaseline = new Int2ObjectOpenHashMap<>(TradeOffers.WANDERING_TRADER_TRADES);
+        if (vanillaBaseline != null) {
+            return;
+        }
+        vanillaBaseline = new Int2ObjectOpenHashMap<>();
+        vanillaCounts = new Int2IntOpenHashMap();
+
+        List<Pair<TradeOffers.Factory[], Integer>> vanilla = TradeOffers.WANDERING_TRADER_TRADES;
+        for (int index = 0; index < vanilla.size(); index++) {
+            Pair<TradeOffers.Factory[], Integer> pair = vanilla.get(index);
+            int level = index + 1;
+            vanillaBaseline.put(level, pair.getLeft());
+            vanillaCounts.put(level, pair.getRight().intValue());
         }
     }
 
@@ -69,6 +97,7 @@ public final class WanderingTraderTradeLoader {
         Set<Integer> levels = new HashSet<>(accumulator.keySet());
         vanillaBaseline.keySet().forEach(level -> levels.add((int) level));
 
+        Int2ObjectMap<TradeOffers.Factory[]> rebuilt = new Int2ObjectOpenHashMap<>();
         for (int level : levels) {
             TradeOffers.Factory[] base = replaceVanilla
                     ? new TradeOffers.Factory[0]
@@ -82,7 +111,49 @@ public final class WanderingTraderTradeLoader {
                 merged = vanillaBaseline.getOrDefault(level, new TradeOffers.Factory[0]);
             }
 
-            TradeOffers.WANDERING_TRADER_TRADES.put(level, merged);
+            rebuilt.put(level, merged);
         }
+
+        mergedPools = rebuilt;
+    }
+
+    /** The pool for a tier (1 = common, 2 = rare), or null if that tier does not exist. */
+    public static TradeOffers.Factory[] poolForLevel(int level) {
+        Int2ObjectMap<TradeOffers.Factory[]> pools = mergedPools;
+        if (pools != null) {
+            return pools.get(level);
+        }
+        ensureBaseline();
+        return vanillaBaseline.get(level);
+    }
+
+    /** How many tiers exist. Vanilla has two. */
+    public static int levelCount() {
+        Int2ObjectMap<TradeOffers.Factory[]> pools = mergedPools;
+        if (pools != null) {
+            return pools.size();
+        }
+        ensureBaseline();
+        return vanillaBaseline.size();
+    }
+
+    /**
+     * What vanilla's {@code fillRecipes} iterates, in tier order. The draw count of tier 1 comes
+     * from the config rather than the snapshot, which is what the {@code @ModifyConstant} on
+     * {@code fillRecipes} used to do — that constant no longer exists, vanilla reads the count from
+     * this pair instead.
+     */
+    public static List<Pair<TradeOffers.Factory[], Integer>> pools() {
+        ensureBaseline();
+        Int2ObjectMap<TradeOffers.Factory[]> pools = mergedPools != null ? mergedPools : vanillaBaseline;
+
+        List<Pair<TradeOffers.Factory[], Integer>> out = new ArrayList<>(pools.size());
+        for (int level : new TreeSet<>(pools.keySet())) {
+            int count = level == 1
+                    ? VillagerTradingPlus.CONFIG.trade_offers_wandering_trader
+                    : vanillaCounts.getOrDefault(level, 1);
+            out.add(Pair.of(pools.get(level), count));
+        }
+        return out;
     }
 }

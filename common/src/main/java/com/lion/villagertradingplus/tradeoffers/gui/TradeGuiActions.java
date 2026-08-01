@@ -5,6 +5,7 @@ import com.lion.villagertradingplus.config.VTPConfig;
 import com.lion.villagertradingplus.platform.NetworkHelper;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpansion;
+import com.lion.villagertradingplus.tradeoffers.WanderingTraderTradeLoader;
 import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPacket;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.entity.passive.MerchantEntity;
@@ -78,7 +79,7 @@ public final class TradeGuiActions {
     /** Re-sends the merchant's offers to the currently open trade screen so the client updates. */
     private static void refresh(ServerPlayerEntity player, MerchantEntity merchant) {
         if (player.currentScreenHandler instanceof MerchantScreenHandler handler) {
-            int level = merchant instanceof VillagerEntity villager ? villager.getVillagerData().getLevel() : 1;
+            int level = merchant instanceof VillagerEntity villager ? villager.getVillagerData().level() : 1;
             player.sendTradeOffers(handler.syncId, merchant.getOffers(), level, merchant.getExperience(),
                     merchant.isLeveledMerchant(), merchant.canRefreshTrades());
         }
@@ -91,7 +92,7 @@ public final class TradeGuiActions {
 
         CatalogBuilder builder = buildCatalog(merchant, level);
         // One catalogue goes out as several packets; they arrive in order and the client reassembles.
-        TradeCatalogPacket.write(player.server.getRegistryManager(), level, maxLevel,
+        TradeCatalogPacket.write(player.getServer().getRegistryManager(), level, maxLevel,
                         builder.entries(), builder.skipped())
                 .forEach(slice -> NetworkHelper.sendToPlayer(player, slice));
     }
@@ -137,10 +138,11 @@ public final class TradeGuiActions {
     private static TradeOffers.Factory[] poolFor(MerchantEntity merchant, int level) {
         if (merchant instanceof VillagerEntity villager) {
             Int2ObjectMap<TradeOffers.Factory[]> map =
-                    TradeOffers.PROFESSION_TO_LEVELED_TRADE.get(villager.getVillagerData().getProfession());
+                    villager.getVillagerData().profession().getKey()
+                            .map(TradeOffers.PROFESSION_TO_LEVELED_TRADE::get).orElse(null);
             return map == null ? null : map.get(level);
         }
         // Wandering trader: level 1 = common, level 2 = rare.
-        return TradeOffers.WANDERING_TRADER_TRADES.get(level);
+        return WanderingTraderTradeLoader.poolForLevel(level);
     }
 }

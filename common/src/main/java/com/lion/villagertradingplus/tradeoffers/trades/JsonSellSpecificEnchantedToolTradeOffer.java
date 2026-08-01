@@ -63,8 +63,8 @@ public class JsonSellSpecificEnchantedToolTradeOffer extends JsonTradeOffer {
                 // An unknown id simply yields an unenchanted tool rather than losing the whole trade;
                 // a datapack may name an enchantment that this world does not have loaded.
                 entity.getWorld().getRegistryManager()
-                        .get(RegistryKeys.ENCHANTMENT)
-                        .getEntry(this.enchantmentKey)
+                        .getOrThrow(RegistryKeys.ENCHANTMENT)
+                        .getOptional(this.enchantmentKey)
                         .ifPresent(enchantment -> itemStack.addEnchantment(enchantment, this.level));
             }
             return new TradeOffer(traded(this.currency.copy()), itemStack, this.maxUses, this.experience, this.multiplier);

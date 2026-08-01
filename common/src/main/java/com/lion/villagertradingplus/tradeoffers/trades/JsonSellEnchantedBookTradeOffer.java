@@ -98,7 +98,7 @@ public class JsonSellEnchantedBookTradeOffer extends JsonTradeOffer {
          */
         private static List<RegistryEntry<Enchantment>> available(World world) {
             List<RegistryEntry<Enchantment>> list = new ArrayList<>();
-            world.getRegistryManager().get(RegistryKeys.ENCHANTMENT).streamEntries()
+            world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT).streamEntries()
                     .filter(entry -> entry.isIn(EnchantmentTags.TRADEABLE))
                     .forEach(list::add);
             return list;

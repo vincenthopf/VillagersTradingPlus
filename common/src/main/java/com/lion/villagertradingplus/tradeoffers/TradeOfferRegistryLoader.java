@@ -2,13 +2,14 @@ package com.lion.villagertradingplus.tradeoffers;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.village.TradeOffers;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.village.VillagerProfession;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.*;
 
 public class TradeOfferRegistryLoader {
-    private static final HashMap<VillagerProfession, Int2ObjectOpenHashMap<List<TradeOffers.Factory>>> TRADES_REGISTRY = new HashMap<>();
+    private static final HashMap<RegistryKey<VillagerProfession>, Int2ObjectOpenHashMap<List<TradeOffers.Factory>>> TRADES_REGISTRY = new HashMap<>();
 
     /**
      * Drops everything accumulated by a previous load. Call at the start of a reload, before any
@@ -23,8 +24,8 @@ public class TradeOfferRegistryLoader {
         TRADES_REGISTRY.clear();
     }
 
-    public static HashMap<VillagerProfession, Int2ObjectOpenHashMap<TradeOffers.Factory[]>> getRegistryForLoading() {
-        HashMap<VillagerProfession, Int2ObjectOpenHashMap<TradeOffers.Factory[]>> villagerTrades = new HashMap<>();
+    public static HashMap<RegistryKey<VillagerProfession>, Int2ObjectOpenHashMap<TradeOffers.Factory[]>> getRegistryForLoading() {
+        HashMap<RegistryKey<VillagerProfession>, Int2ObjectOpenHashMap<TradeOffers.Factory[]>> villagerTrades = new HashMap<>();
 
         TRADES_REGISTRY.forEach(((villagerProfession, listInt2ObjectOpenHashMap) -> {
             Int2ObjectOpenHashMap<TradeOffers.Factory[]> factories = villagerTrades.getOrDefault(villagerProfession, new Int2ObjectOpenHashMap<>());
@@ -41,11 +42,11 @@ public class TradeOfferRegistryLoader {
         return villagerTrades;
     }
 
-    public static void registerVillagerTrade(VillagerProfession profession, int level, TradeOffers.Factory trade) {
+    public static void registerVillagerTrade(RegistryKey<VillagerProfession> profession, int level, TradeOffers.Factory trade) {
         getVillagerTradeList(profession, level).add(trade);
     }
 
-    private static List<TradeOffers.Factory> getVillagerTradeList(VillagerProfession profession, int level) {
+    private static List<TradeOffers.Factory> getVillagerTradeList(RegistryKey<VillagerProfession> profession, int level) {
         Int2ObjectOpenHashMap<List<TradeOffers.Factory>> villagerMap = getOrDefaultAndAdd(TRADES_REGISTRY, profession, new Int2ObjectOpenHashMap<>());
         return getOrDefaultAndAdd(villagerMap, level, new ArrayList<>());
     }

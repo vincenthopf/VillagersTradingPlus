@@ -5,8 +5,10 @@ import com.lion.villagertradingplus.tradeoffers.gui.TradeControl;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.TradeOfferList;
 import net.minecraft.village.TradeOffers;
@@ -46,18 +48,20 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Trad
         return VillagerTradingPlus.CONFIG.trade_offers_per_level;
     }
 
-    @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
-    private void villagertradingplus$writeLevelCounts(NbtCompound nbt, CallbackInfo ci) {
+    // Entity NBT went through ReadView/WriteView in 1.21.6: writeCustomDataToNbt/readCustomDataFromNbt
+    // no longer exist. Renaming only the @Inject target would have compiled and then silently never
+    // fired, which is exactly the failure mode the 1.21.1 port ran into.
+    @Inject(method = "writeCustomData", at = @At("TAIL"))
+    private void villagertradingplus$writeLevelCounts(WriteView view, CallbackInfo ci) {
         if (villagertradingplus$levelCounts != null) {
-            nbt.putIntArray("VillagerTradingPlusLevelCounts", villagertradingplus$levelCounts);
+            view.putIntArray("VillagerTradingPlusLevelCounts", villagertradingplus$levelCounts);
         }
     }
 
-    @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
-    private void villagertradingplus$readLevelCounts(NbtCompound nbt, CallbackInfo ci) {
-        if (nbt.contains("VillagerTradingPlusLevelCounts")) {
-            villagertradingplus$levelCounts = nbt.getIntArray("VillagerTradingPlusLevelCounts");
-        }
+    @Inject(method = "readCustomData", at = @At("TAIL"))
+    private void villagertradingplus$readLevelCounts(ReadView view, CallbackInfo ci) {
+        villagertradingplus$levelCounts =
+                view.getOptionalIntArray("VillagerTradingPlusLevelCounts").orElse(null);
     }
 
     @Override
@@ -67,13 +71,12 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Trad
 
     @Override
     public void villagertradingplus$rerollAll() {
-        VillagerProfession profession = getVillagerData().getProfession();
-        Int2ObjectMap<TradeOffers.Factory[]> map = TradeOffers.PROFESSION_TO_LEVELED_TRADE.get(profession);
+        Int2ObjectMap<TradeOffers.Factory[]> map = villagertradingplus$tradesForProfession();
 
         TradeOfferList offers = getOffers();
         offers.clear();
 
-        int level = getVillagerData().getLevel();
+        int level = getVillagerData().level();
         int[] counts = new int[level + 1];
 
         if (map != null) {
@@ -93,7 +96,7 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Trad
 
     @Override
     public void villagertradingplus$rerollLevel(int targetLevel) {
-        int level = getVillagerData().getLevel();
+        int level = getVillagerData().level();
         if (targetLevel < 1 || targetLevel > level) {
             return;
         }
@@ -107,8 +110,7 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Trad
             return;
         }
 
-        VillagerProfession profession = getVillagerData().getProfession();
-        Int2ObjectMap<TradeOffers.Factory[]> map = TradeOffers.PROFESSION_TO_LEVELED_TRADE.get(profession);
+        Int2ObjectMap<TradeOffers.Factory[]> map = villagertradingplus$tradesForProfession();
         TradeOffers.Factory[] pool = map == null ? null : map.get(targetLevel);
 
         int start = villagertradingplus$sum(counts, 1, targetLevel - 1);
@@ -134,6 +136,18 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Trad
         if (getWorld() instanceof ServerWorld serverWorld) {
             reinitializeBrain(serverWorld);
         }
+    }
+
+    /**
+     * The trade table is keyed by {@link RegistryKey} since 1.21.6, and a villager's profession is a
+     * {@link net.minecraft.registry.entry.RegistryEntry} that need not carry one - an inline entry
+     * has a value but no key. Such a villager simply has no vanilla trade pool, hence the null.
+     */
+    @Unique
+    private Int2ObjectMap<TradeOffers.Factory[]> villagertradingplus$tradesForProfession() {
+        return getVillagerData().profession().getKey()
+                .map(TradeOffers.PROFESSION_TO_LEVELED_TRADE::get)
+                .orElse(null);
     }
 
     @Unique

@@ -79,14 +79,6 @@ public final class TradeCatalogPanel {
     private static final int NAV_SIZE = 20;
     private static final int NAV_LEFT_X = 6;
 
-    /**
-     * Raise applied only when the panel could not avoid overlapping the trade screen. Vanilla draws
-     * the merchant's trade items at z 250 and its arrow at 300, so without this they punch through a
-     * panel drawn at z 0 — which is what made an overlapping panel look shattered rather than simply
-     * layered.
-     */
-    private static final int OVERLAP_Z = 320;
-
     private static final int PANEL_BACKGROUND = 0xFFC6C6C6;
     private static final int PANEL_HIGHLIGHT = 0xFFFFFFFF;
     private static final int PANEL_SHADOW = 0xFF555555;
@@ -295,16 +287,18 @@ public final class TradeCatalogPanel {
             return;
         }
 
-        // Raised only when the panel had to overlap, so it layers cleanly over vanilla's trade items
-        // (z 250) and arrow (z 300) instead of being pierced by them.
-        context.getMatrices().push();
+        // Only needed when the panel had to overlap, so it layers cleanly over vanilla's trade items
+        // and arrow instead of being pierced by them.
+        //
+        // This used to be a Z translate over vanilla's z 250 (items) and z 300 (arrow). Since 1.21.6
+        // DrawContext.getMatrices() is a 2D Matrix3x2fStack with no Z axis at all; the GUI is
+        // composited per layer in submission order instead. Starting a new root layer is what "above
+        // everything drawn so far" means now, and it does not depend on guessing vanilla's depths.
         if (this.overlapping) {
-            context.getMatrices().translate(0.0f, 0.0f, OVERLAP_Z);
+            context.createNewRootLayer();
         }
 
         drawPanel(context, mouseX, mouseY);
-
-        context.getMatrices().pop();
     }
 
     private void drawPanel(DrawContext context, int mouseX, int mouseY) {
@@ -588,7 +582,7 @@ public final class TradeCatalogPanel {
             return;
         }
         context.drawItemWithoutEntity(stack, slotX, slotY);
-        context.drawItemInSlot(this.client.textRenderer, stack, slotX, slotY);
+        context.drawStackOverlay(this.client.textRenderer, stack, slotX, slotY);
     }
 
     private void drawCentered(DrawContext context, Text text, int localY, int color) {

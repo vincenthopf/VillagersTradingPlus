@@ -12,6 +12,8 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.GlobalPos;
+import net.minecraft.resource.featuretoggle.FeatureFlags;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
@@ -50,7 +52,10 @@ public final class TradeConditions {
     }
 
     static {
-        GameRules.accept(new GameRules.Visitor() {
+        // accept() stopped being static in 1.21.6 because game rules are feature-gated now. A
+        // throwaway instance over the default feature set enumerates every rule a vanilla world can
+        // have, which is all this map is for: turning a rule name from JSON into a typed Key.
+        new GameRules(FeatureFlags.DEFAULT_ENABLED_FEATURES).accept(new GameRules.Visitor() {
             @Override
             public <T extends GameRules.Rule<T>> void visit(GameRules.Key<T> key, GameRules.Type<T> type) {
             }
@@ -198,7 +203,10 @@ public final class TradeConditions {
             VillagerTradingPlus.LOGGER.error("gamerule condition references unknown boolean rule: " + ruleName);
             return villager -> false;
         }
-        return villager -> villager.getWorld().getGameRules().getBoolean(key) == expected;
+        // getGameRules() moved off World onto ServerWorld. Trades are only ever generated
+        // server-side, so a client-side world simply fails the condition rather than guessing.
+        return villager -> villager.getWorld() instanceof ServerWorld serverWorld
+                && serverWorld.getGameRules().getBoolean(key) == expected;
     }
 
     private static TradeCondition parseJobSite(JsonObject json) {

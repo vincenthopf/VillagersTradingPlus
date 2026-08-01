@@ -6,6 +6,9 @@ import com.lion.villagertradingplus.tradeoffers.conditions.TradeConditions;
 import com.lion.villagertradingplus.tradeoffers.trades.*;
 import com.lion.villagertradingplus.tradeoffers.util.TradeParseException;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.village.VillagerProfession;
 import net.minecraft.util.Identifier;
 import net.minecraft.village.TradeOffers;
 import org.jetbrains.annotations.NotNull;
@@ -95,11 +98,18 @@ public class TradeOfferManager {
     public static void deserializeJson(JsonObject jsonRoot) {
         Identifier professionId = Identifier.tryParse(jsonRoot.get("profession").getAsString());
 
-        Registries.VILLAGER_PROFESSION
-                .getOrEmpty(professionId)
-                .ifPresent(villagerProfession
-                        -> deserializeTrades(jsonRoot, (integer, factory)
-                        -> TradeOfferRegistryLoader.registerVillagerTrade(villagerProfession, integer, factory)));
+        // The trade table is keyed by RegistryKey since 1.21.6. The registry is still consulted, but
+        // only to reject a profession that does not exist - registering under a typo'd key would
+        // otherwise succeed silently and the trades would never be offered to anyone.
+        if (professionId == null || Registries.VILLAGER_PROFESSION.getOptionalValue(professionId).isEmpty()) {
+            VillagerTradingPlus.LOGGER.error("Unknown villager profession in trade file: {}", professionId);
+            return;
+        }
+
+        RegistryKey<VillagerProfession> profession =
+                RegistryKey.of(RegistryKeys.VILLAGER_PROFESSION, professionId);
+        deserializeTrades(jsonRoot, (integer, factory)
+                -> TradeOfferRegistryLoader.registerVillagerTrade(profession, integer, factory));
     }
 
     /**

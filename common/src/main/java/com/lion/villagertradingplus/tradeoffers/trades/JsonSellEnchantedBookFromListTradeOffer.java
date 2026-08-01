@@ -65,7 +65,7 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
 
             Optional<RegistryEntry.Reference<Enchantment>> enchantment = identifier == null
                     ? Optional.empty()
-                    : registry.flatMap(r -> r.getEntry(RegistryKey.of(RegistryKeys.ENCHANTMENT, identifier)));
+                    : registry.flatMap(r -> r.getOptional(RegistryKey.of(RegistryKeys.ENCHANTMENT, identifier)));
 
             if (enchantment.isEmpty()) {
                 VillagerTradingPlus.LOGGER.error("Unknown enchantment in sell_enchanted_book_from_list: {}", id);
@@ -176,10 +176,10 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
          * that only one of the two knows about.
          */
         private List<Resolved> resolve(World world) {
-            Registry<Enchantment> registry = world.getRegistryManager().get(RegistryKeys.ENCHANTMENT);
+            Registry<Enchantment> registry = world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT);
             List<Resolved> resolved = new ArrayList<>(this.entries.size());
             for (Entry entry : this.entries) {
-                registry.getEntry(entry.key()).ifPresent(enchantment -> resolved.add(new Resolved(entry, enchantment)));
+                registry.getOptional(entry.key()).ifPresent(enchantment -> resolved.add(new Resolved(entry, enchantment)));
             }
             return resolved;
         }

@@ -1,14 +1,15 @@
 package com.lion.villagertradingplus.platform.neoforge;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.lion.villagertradingplus.tradeoffers.TradeMerger;
 import com.lion.villagertradingplus.tradeoffers.TradeOfferManager;
 import net.minecraft.resource.JsonDataLoader;
+import net.minecraft.resource.ResourceFinder;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloader;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.profiler.Profiler;
 
 import java.util.Map;
@@ -22,10 +23,10 @@ import java.util.Map;
  * namespace. The file name is only a name - which profession a file belongs to is read from its
  * {@code "profession"} field, exactly as the default loader does it.
  */
-public class TradeOfferResourceListener extends JsonDataLoader implements ResourceReloader {
+public class TradeOfferResourceListener extends JsonDataLoader<JsonElement> implements ResourceReloader {
 
     public TradeOfferResourceListener() {
-        super(new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().setLenient().create(), "villager_trades");
+        super(Codecs.JSON_ELEMENT, ResourceFinder.json("villager_trades"));
     }
 
     @Override

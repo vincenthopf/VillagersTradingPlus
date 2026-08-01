@@ -1,23 +1,24 @@
 package com.lion.villagertradingplus.platform.fabric;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.lion.villagertradingplus.tradeoffers.TradeOfferManager;
 import com.lion.villagertradingplus.tradeoffers.TradeOfferRegistryLoader;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.minecraft.resource.JsonDataLoader;
+import net.minecraft.resource.ResourceFinder;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.village.TradeOffers;
 
 import java.util.Map;
 
-public class DefaultTradeOfferResourceListener extends JsonDataLoader implements IdentifiableResourceReloadListener {
+public class DefaultTradeOfferResourceListener extends JsonDataLoader<JsonElement> implements IdentifiableResourceReloadListener {
 
     public DefaultTradeOfferResourceListener() {
-        super(new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().setLenient().create(), "default_villager_trades");
+        super(Codecs.JSON_ELEMENT, ResourceFinder.json("default_villager_trades"));
     }
 
     @Override
