@@ -13,6 +13,13 @@ description = '''
 A library for defining villager and wandering trader trades in JSON, with conditions, dynamic pricing and an in-game trade catalog.
 '''
 
+# NeoForge does not read mixin configs from anywhere else — Fabric picks them up from
+# fabric.mod.json, but here they have to be declared. Without this block not a single mixin applies:
+# no trade-screen buttons, no catalogue, the offers-per-level config silently does nothing, and
+# DataPackContentsMixin never hands the registries to the trade parser.
+[[mixins]]
+config = "villagertradingplus-common.mixins.json"
+
 [[dependencies.villagertradingplus]]
 modId = "neoforge"
 # "mandatory" was replaced by "type" in the 1.20.5 loader generation.
