@@ -1,5 +1,7 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.VillagerTradingPlus;
@@ -43,11 +45,11 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
     public TradeOffers.Factory deserialize(JsonObject json) {
         loadDefaultStats(json);
 
-        ItemStack currency = getItemStackFromJsonWithoutCount(json.get("currency").getAsJsonObject());
+        ItemStack currency = getItemStackFromJsonWithoutCount(JsonFields.requireObject(json, "sell_enchanted_book_from_list trade", "currency"));
 
         List<Entry> entries = new ArrayList<>();
         int totalWeight = 0;
-        for (JsonElement element : json.getAsJsonArray("enchantments")) {
+        for (JsonElement element : JsonFields.requireArray(json, "sell_enchanted_book_from_list trade", "enchantments")) {
             JsonObject obj = element.getAsJsonObject();
             Enchantment enchantment = Registries.ENCHANTMENT.get(Identifier.tryParse(obj.get("id").getAsString()));
             if (enchantment == null) {

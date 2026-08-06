@@ -1,5 +1,7 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
+
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpandable;
@@ -18,7 +20,7 @@ public class JsonSellEnchantedToolTradeOffer extends JsonTradeOffer {
     public TradeOffers.Factory deserialize(JsonObject json) {
         loadDefaultStats(json);
 
-        ItemStack sell = getItemStackFromJson(json.get("sell").getAsJsonObject());
+        ItemStack sell = getItemStackFromJson(JsonFields.requireObject(json, "sell_enchanted_tool trade", "sell"));
         ItemStack currency = getItemStackFromJson(json.get("basePriceIn").getAsJsonObject());
 
         return new Factory(sell, currency, maxUses, experience, priceMultiplier);

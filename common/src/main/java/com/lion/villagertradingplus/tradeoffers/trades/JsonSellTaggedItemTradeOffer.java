@@ -1,5 +1,7 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
+
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpandable;
@@ -29,7 +31,7 @@ public class JsonSellTaggedItemTradeOffer extends JsonTradeOffer {
     @NotNull
     public TradeOffers.Factory deserialize(JsonObject json) {
         loadDefaultStats(json);
-        Ingredient sell = Ingredient.fromJson(json.get("sell").getAsJsonObject());
+        Ingredient sell = Ingredient.fromJson(JsonFields.requireObject(json, "sell_tagged_item trade", "sell"));
         ItemStack currency = getItemStackFromJson(json.get("priceIn").getAsJsonObject());
         return new Factory(sell, currency, maxUses, experience, priceMultiplier, demand);
     }

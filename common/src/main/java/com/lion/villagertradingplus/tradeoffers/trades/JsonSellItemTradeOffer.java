@@ -1,5 +1,7 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
+
 import com.google.gson.JsonObject;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
@@ -14,7 +16,7 @@ public class JsonSellItemTradeOffer extends JsonTradeOffer {
     public TradeOffers.Factory deserialize(JsonObject json) {
         loadDefaultStats(json);
 
-        ItemStack sell = getItemStackFromJson(json.get("sell").getAsJsonObject());
+        ItemStack sell = getItemStackFromJson(JsonFields.requireObject(json, "sell_item trade", "sell"));
         ItemStack currency = getItemStackFromJson(json.get("priceIn").getAsJsonObject());
 
         return new Factory(sell, currency, maxUses, experience, priceMultiplier, demand);

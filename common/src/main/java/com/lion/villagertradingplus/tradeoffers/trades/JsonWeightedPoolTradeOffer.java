@@ -1,5 +1,7 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.tradeoffers.PricingTradeFactory;
@@ -36,7 +38,7 @@ public class JsonWeightedPoolTradeOffer extends JsonTradeOffer {
     public TradeOffers.Factory deserialize(JsonObject json) {
         List<Entry> entries = new ArrayList<>();
         int totalWeight = 0;
-        for (JsonElement element : json.getAsJsonArray("pool")) {
+        for (JsonElement element : JsonFields.requireArray(json, "weighted_pool trade", "pool")) {
             JsonObject entry = element.getAsJsonObject();
             int weight = readInt(entry, "weight", 1);
             TradeOffers.Factory factory = TradeOfferManager.deserializeTrade(entry.getAsJsonObject("trade"));

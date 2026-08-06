@@ -4,6 +4,7 @@ import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.google.gson.*;
 import com.lion.villagertradingplus.tradeoffers.conditions.TradeConditions;
 import com.lion.villagertradingplus.tradeoffers.trades.*;
+import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import com.lion.villagertradingplus.tradeoffers.util.TradeParseException;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
@@ -93,13 +94,22 @@ public class TradeOfferManager {
     }
 
     public static void deserializeJson(JsonObject jsonRoot) {
-        Identifier professionId = Identifier.tryParse(jsonRoot.get("profession").getAsString());
+        // One unusable file costs that file, not the reload. The listener logs which one it is
+        // right before calling in, so the pair of lines pins it down.
+        try {
+            Identifier professionId = Identifier.tryParse(
+                    JsonFields.requireString(jsonRoot, "villager trade file", "profession"));
 
-        Registries.VILLAGER_PROFESSION
-                .getOrEmpty(professionId)
-                .ifPresent(villagerProfession
-                        -> deserializeTrades(jsonRoot, (integer, factory)
-                        -> TradeOfferRegistryLoader.registerVillagerTrade(villagerProfession, integer, factory)));
+            Registries.VILLAGER_PROFESSION
+                    .getOrEmpty(professionId)
+                    .ifPresent(villagerProfession
+                            -> deserializeTrades(jsonRoot, (integer, factory)
+                            -> TradeOfferRegistryLoader.registerVillagerTrade(villagerProfession, integer, factory)));
+        } catch (TradeParseException e) {
+            VillagerTradingPlus.LOGGER.error("Skipping villager trade file: {}", e.getMessage());
+        } catch (RuntimeException e) {
+            VillagerTradingPlus.LOGGER.error("Skipping malformed villager trade file.", e);
+        }
     }
 
     /**
@@ -113,27 +123,52 @@ public class TradeOfferManager {
             WanderingTraderTradeLoader.setReplace(jsonRoot.get("replace").getAsBoolean());
         }
 
-        for (Map.Entry<String, JsonElement> entry : jsonRoot.get("trades").getAsJsonObject().entrySet()) {
-            Integer level = WanderingTraderTradeLoader.LEVEL_MAPPING.get(entry.getKey());
-            if (level == null) {
-                VillagerTradingPlus.LOGGER.error("Unknown wandering trader trade tier: " + entry.getKey() + " (use 'common' or 'rare').");
-                continue;
-            }
+        try {
+            JsonObject trades = JsonFields.requireObject(jsonRoot, "wandering trader trade file", "trades");
+            for (Map.Entry<String, JsonElement> entry : trades.entrySet()) {
+                Integer level = WanderingTraderTradeLoader.LEVEL_MAPPING.get(entry.getKey());
+                if (level == null) {
+                    VillagerTradingPlus.LOGGER.error("Unknown wandering trader trade tier: " + entry.getKey() + " (use 'common' or 'rare').");
+                    continue;
+                }
 
-            for (JsonElement tradeElement : entry.getValue().getAsJsonArray()) {
-                JsonObject trade = tradeElement.getAsJsonObject();
-                TradeOffers.Factory factory = deserializeTrade(trade);
-                if (factory == null) {
-                    VillagerTradingPlus.LOGGER.error("Wandering trader trade type broken: " + trade);
-                } else {
-                    WanderingTraderTradeLoader.add(level, factory);
+                // Only the tier as a whole is lost if it is not even an array; a single unusable
+                // entry below costs just that entry.
+                JsonArray tierTrades;
+                try {
+                    tierTrades = JsonFields.requireArray(trades, "tier '" + entry.getKey() + "'", entry.getKey());
+                } catch (RuntimeException e) {
+                    VillagerTradingPlus.LOGGER.error("Skipping wandering trader tier '{}': {}", entry.getKey(), e.getMessage());
+                    continue;
+                }
+
+                for (JsonElement tradeElement : tierTrades) {
+                    JsonObject trade;
+                    try {
+                        trade = JsonFields.asObject(tradeElement, "tier '" + entry.getKey() + "'");
+                    } catch (RuntimeException e) {
+                        VillagerTradingPlus.LOGGER.error("Dropped an entry from wandering trader tier '{}': {}", entry.getKey(), e.getMessage());
+                        continue;
+                    }
+
+                    TradeOffers.Factory factory = deserializeTrade(trade);
+                    if (factory == null) {
+                        VillagerTradingPlus.LOGGER.error("Wandering trader trade type broken: " + trade);
+                    } else {
+                        WanderingTraderTradeLoader.add(level, factory);
+                    }
                 }
             }
+        } catch (TradeParseException e) {
+            VillagerTradingPlus.LOGGER.error("Skipping wandering trader trade file: {}", e.getMessage());
+        } catch (RuntimeException e) {
+            VillagerTradingPlus.LOGGER.error("Skipping malformed wandering trader trade file.", e);
         }
     }
 
     private static void deserializeTrades(@NotNull JsonObject jsonRoot, BiConsumer<Integer, TradeOffers.Factory> tradeConsumer) {
-        for (Map.Entry<String, JsonElement> entry : jsonRoot.get("trades").getAsJsonObject().entrySet()) {
+        JsonObject trades = JsonFields.requireObject(jsonRoot, "villager trade file", "trades");
+        for (Map.Entry<String, JsonElement> entry : trades.entrySet()) {
 
             Integer level = professionMapping.get(entry.getKey());
             if (level == null) {
@@ -142,8 +177,25 @@ public class TradeOfferManager {
                 continue;
             }
 
-            for (JsonElement tradeElement : entry.getValue().getAsJsonArray()) {
-                JsonObject trade = tradeElement.getAsJsonObject();
+            // Only the tier as a whole is lost if it is not even an array; a single unusable entry
+            // below costs just that entry, so the ones after it still load.
+            JsonArray tierTrades;
+            try {
+                tierTrades = JsonFields.requireArray(trades, "tier '" + entry.getKey() + "'", entry.getKey());
+            } catch (RuntimeException e) {
+                VillagerTradingPlus.LOGGER.error("Skipping tier '{}': {}", entry.getKey(), e.getMessage());
+                continue;
+            }
+
+            for (JsonElement tradeElement : tierTrades) {
+                JsonObject trade;
+                try {
+                    trade = JsonFields.asObject(tradeElement, "tier '" + entry.getKey() + "'");
+                } catch (RuntimeException e) {
+                    VillagerTradingPlus.LOGGER.error("Dropped an entry from tier '{}': {}", entry.getKey(), e.getMessage());
+                    continue;
+                }
+
                 TradeOffers.Factory factory = deserializeTrade(trade);
 
                 // deserializeTrade already logged why; just record which tier lost a trade.
@@ -184,6 +236,15 @@ public class TradeOfferManager {
         } catch (TradeParseException e) {
             // Skip only this trade: one bad item id must not take the rest of the datapack with it.
             VillagerTradingPlus.LOGGER.warn("Skipping '{}' trade: {}", type, e.getMessage());
+            return null;
+        } catch (RuntimeException e) {
+            // The backstop. Every trade in every datapack passes through here, so this is the one
+            // place that can promise that a malformed file costs a trade rather than the world:
+            // an unchecked read anywhere below would otherwise escape into the resource reload and
+            // abort it. Logged with the stack trace because, unlike a TradeParseException, this is
+            // not an expected shape of bad input - it is either an unguarded read that should be
+            // using JsonFields, or a genuine defect here.
+            VillagerTradingPlus.LOGGER.error("Skipping malformed '{}' trade: {}", type, trade, e);
             return null;
         }
     }
