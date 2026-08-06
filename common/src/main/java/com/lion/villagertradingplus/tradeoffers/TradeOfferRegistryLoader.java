@@ -10,17 +10,15 @@ import java.util.*;
 public class TradeOfferRegistryLoader {
     private static final HashMap<VillagerProfession, Int2ObjectOpenHashMap<List<TradeOffers.Factory>>> TRADES_REGISTRY = new HashMap<>();
 
-    /**
-     * Drops everything accumulated by a previous load. Call at the start of a reload, before any
-     * trade file is deserialized.
-     *
-     * <p>Without this every {@code /reload} appended a fresh copy of each trade to the same lists,
-     * so pools grew on each reload within a session and the same trade could be offered — and
-     * catalogued — several times over. {@code WanderingTraderTradeLoader.begin()} has always done
-     * this for the trader; the villager path had no equivalent.
-     */
+    /// Starts a reload from a clean slate. Call before any trade file is deserialized.
+    ///
+    /// Two things have to be dropped, not one: what this loader accumulated, and what the previous
+    /// reload left in vanilla's table. Both survive a reload while re-parsing hands out fresh
+    /// `Factory` instances, so anything kept from the last pass can no longer be recognised as the
+    /// same trade and ends up in the pool a second time.
     public static void begin() {
         TRADES_REGISTRY.clear();
+        TradeMerger.resetToVanilla();
     }
 
     public static HashMap<VillagerProfession, Int2ObjectOpenHashMap<TradeOffers.Factory[]>> getRegistryForLoading() {
