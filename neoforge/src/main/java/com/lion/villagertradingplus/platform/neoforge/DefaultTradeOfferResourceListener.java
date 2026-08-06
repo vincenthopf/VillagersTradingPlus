@@ -31,7 +31,10 @@ public class DefaultTradeOfferResourceListener extends JsonDataLoader<JsonElemen
                 return;
             }
 
-            VillagerTradingPlus.LOGGER.info("Deserializing default trades of profession: " + jsonElement.getAsJsonObject().get("profession").getAsString());
+            // The file name, not a field out of the file. Reading the JSON here would put an
+            // unguarded access in front of the guard inside deserializeJson - which is exactly how
+            // a file without a "profession" key used to abort the whole resource reload.
+            VillagerTradingPlus.LOGGER.info("Deserializing default trades from: {}", identifier);
 
             TradeOfferManager.deserializeJson(jsonElement.getAsJsonObject());
         });
