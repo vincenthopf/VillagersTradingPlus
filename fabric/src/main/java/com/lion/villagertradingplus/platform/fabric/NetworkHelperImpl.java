@@ -1,8 +1,6 @@
 package com.lion.villagertradingplus.platform.fabric;
 
 import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPayload;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -29,7 +27,6 @@ public final class NetworkHelperImpl {
         ServerPlayNetworking.send(player, payload);
     }
 
-    @Environment(EnvType.CLIENT)
     public static void registerCatalogReceiver(Consumer<TradeCatalogPayload> receiver) {
         // The payload is already a decoded, immutable record here - unlike the old raw-buffer
         // receiver, nothing has to be copied off the network thread before handing it over.

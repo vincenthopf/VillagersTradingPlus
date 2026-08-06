@@ -2,8 +2,6 @@ package com.lion.villagertradingplus.client;
 
 import com.lion.villagertradingplus.platform.NetworkHelper;
 import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPacket;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
  * catalogue is ever in flight — a player can have exactly one trade screen open — so a single slot
  * is enough.
  */
-@Environment(EnvType.CLIENT)
 public final class TradeCatalogClientState {
 
     /**

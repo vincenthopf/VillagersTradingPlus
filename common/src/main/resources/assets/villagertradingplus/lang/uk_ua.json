@@ -42,6 +42,7 @@
   "condition.villagertradingplus.day_night.day": "день",
   "condition.villagertradingplus.day_night.night": "ніч",
   "condition.villagertradingplus.moon_phase": "Фаза місяця: %s",
+  "condition.villagertradingplus.moon_phase_night": "Фаза місяця вночі: %s",
   "condition.villagertradingplus.config_flag": "Налаштування %s = %s",
   "condition.villagertradingplus.gamerule": "Ігрове правило %s = %s",
   "condition.villagertradingplus.job_site_block": "Робоче місце: %s",

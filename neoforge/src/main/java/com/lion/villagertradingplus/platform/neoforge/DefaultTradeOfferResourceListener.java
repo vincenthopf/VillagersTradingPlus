@@ -2,6 +2,7 @@ package com.lion.villagertradingplus.platform.neoforge;
 
 import com.google.gson.JsonElement;
 import com.lion.villagertradingplus.VillagerTradingPlus;
+import com.lion.villagertradingplus.tradeoffers.TradeMerger;
 import com.lion.villagertradingplus.tradeoffers.TradeOfferManager;
 import com.lion.villagertradingplus.tradeoffers.TradeOfferRegistryLoader;
 import net.minecraft.resource.JsonDataLoader;
@@ -11,7 +12,6 @@ import net.minecraft.resource.ResourceReloader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.profiler.Profiler;
-import net.minecraft.village.TradeOffers;
 
 import java.util.Map;
 
@@ -36,6 +36,6 @@ public class DefaultTradeOfferResourceListener extends JsonDataLoader<JsonElemen
             TradeOfferManager.deserializeJson(jsonElement.getAsJsonObject());
         });
 
-        TradeOffers.PROFESSION_TO_LEVELED_TRADE.putAll(TradeOfferRegistryLoader.getRegistryForLoading());
+        TradeMerger.installDefaults(TradeOfferRegistryLoader.getRegistryForLoading());
     }
 }

@@ -42,6 +42,7 @@
   "condition.villagertradingplus.day_night.day": "dag",
   "condition.villagertradingplus.day_night.night": "nacht",
   "condition.villagertradingplus.moon_phase": "Maanfase: %s",
+  "condition.villagertradingplus.moon_phase_night": "Maanfase 's nachts: %s",
   "condition.villagertradingplus.config_flag": "Config %s = %s",
   "condition.villagertradingplus.gamerule": "Spelregel %s = %s",
   "condition.villagertradingplus.job_site_block": "Werkplek: %s",

@@ -3,8 +3,6 @@ package com.lion.villagertradingplus.mixin;
 import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.lion.villagertradingplus.client.TradeCatalogClientState;
 import com.lion.villagertradingplus.client.screen.TradeCatalogPanel;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -33,7 +31,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@code backgroundWidth}, {@code width}, {@code addDrawableChild}, {@code getScreenHandler}) are
  * used directly without shadows.
  */
-@Environment(EnvType.CLIENT)
 @Mixin(MerchantScreen.class)
 public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHandler> {
 
@@ -47,6 +44,10 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
      */
     @Shadow
     private boolean scrolling;
+
+    /** Which trade the right-hand panel shows. Vanilla indexes the offer list with it unguarded. */
+    @Shadow
+    private int selectedIndex;
 
     @Unique private int villagertradingplus$level = 1;
     @Unique private ButtonWidget villagertradingplus$levelDisplay;
@@ -162,6 +163,23 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
      * {@code Screen.render} has drawn the control buttons — the panel is entirely hand-drawn, so
      * there are no widgets of ours underneath for it to paint over.
      */
+    /**
+     * Keeps {@link #selectedIndex} inside the offer list.
+     *
+     * <p>{@code MerchantScreen.render} does {@code getRecipes().get(this.selectedIndex)} with no
+     * bounds check, and setting a villager's level or re-rolling its trades replaces that list with
+     * a shorter one while the screen stays open - the selection then points past the end and the
+     * next frame throws. Clamped here rather than where the offers arrive, so it holds no matter
+     * which side shortened the list or in what order the packets landed.
+     */
+    @Inject(method = "render", at = @At("HEAD"))
+    private void villagertradingplus$clampSelectedIndex(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        int size = this.getScreenHandler().getRecipes().size();
+        if (this.selectedIndex >= size) {
+            this.selectedIndex = Math.max(0, size - 1);
+        }
+    }
+
     @Inject(method = "render", at = @At("TAIL"))
     private void villagertradingplus$renderCatalog(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (this.villagertradingplus$catalog == null) {

@@ -4,8 +4,6 @@ import com.lion.villagertradingplus.client.TradeCatalogClientState;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogEntry;
 import com.lion.villagertradingplus.tradeoffers.catalog.ConditionInfo;
 import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPacket;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -40,7 +38,6 @@ import java.util.Optional;
  * <p>Paging and scrolling are entirely local: the server ships a whole tier in one packet, so moving
  * through a librarian's hundred-odd enchanted books costs nothing.
  */
-@Environment(EnvType.CLIENT)
 public final class TradeCatalogPanel {
 
     /** Full width, used whenever the gutter can take it. */
@@ -88,9 +85,11 @@ public final class TradeCatalogPanel {
     private static final int ROW_GATED = 0x30FF7F27;
     private static final int BUTTON_FILL = 0xFF8B8B8B;
     private static final int BUTTON_HOVER = 0xFFA8A8A8;
-    private static final int TEXT = 0x404040;
-    private static final int TEXT_DIM = 0x707070;
-    private static final int TEXT_GATED = 0xB06000;
+    /** Text colours are ARGB: without the alpha byte the glyphs are drawn fully transparent. */
+    private static final int TEXT = 0xFF404040;
+    private static final int TEXT_DIM = 0xFF707070;
+    private static final int TEXT_GATED = 0xFFB06000;
+    private static final int BUTTON_LABEL = 0xFFFFFFFF;
 
     /** Button ids, matching the tier ids the merchant screen already sends (130 + level). */
     private static final int CATALOG_REQUEST_BASE = 130;
@@ -568,7 +567,7 @@ public final class TradeCatalogPanel {
                 hovered ? BUTTON_HOVER : BUTTON_FILL);
 
         TextRenderer font = this.client.textRenderer;
-        context.drawText(font, label, left + (NAV_SIZE - font.getWidth(label)) / 2, top + 6, 0xFFFFFF, true);
+        context.drawText(font, label, left + (NAV_SIZE - font.getWidth(label)) / 2, top + 6, BUTTON_LABEL, true);
     }
 
     /** Draws a vanilla-looking 18x18 slot hole around the 16x16 item area at (x, y). */

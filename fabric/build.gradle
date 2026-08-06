@@ -9,7 +9,7 @@ architectury {
 
 configurations {
 	common
-	shadowCommon // Don't use shadow from the shadow plugin since it *excludes* files.
+	shadowCommon
 	compileClasspath.extendsFrom common
 	runtimeClasspath.extendsFrom common
 	developmentFabric.extendsFrom common

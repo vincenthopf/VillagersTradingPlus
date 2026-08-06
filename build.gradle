@@ -1,8 +1,6 @@
 plugins {
 	id "architectury-plugin" version "3.4-SNAPSHOT"
 	id "dev.architectury.loom" version "1.11-SNAPSHOT" apply false
-	// Pinned to the 1.x line on purpose: mod-publish-plugin 2.0 requires Gradle 9, and the wrapper
-	// is on 8.14 for Loom 1.11. Only bump this past 1.x together with Loom and Gradle.
 	id "me.modmuss50.mod-publish-plugin" version "1.1.0"
 }
 
@@ -52,37 +50,17 @@ allprojects {
 	}
 }
 
-// ---------------------------------------------------------------------------------------------
-// Release publishing.
-//
-// NOT ARMED. Every task runs in dry-run mode unless PUBLISH_LIVE=true is set, in which case it
-// only writes the release assets to build/mod-publish-plugin/ instead of uploading anything.
-// To go live you need, in this order:
-//   1. real project ids in ~/.gradle/gradle.properties (never in this repo's gradle.properties,
-//      that file is tracked): vtpModrinthId, vtpCurseforgeId
-//   2. tokens, either as env vars (MODRINTH_TOKEN / CURSEFORGE_TOKEN / GITHUB_TOKEN) or as
-//      gradle properties (modrinthToken / curseforgeToken)
-//   3. PUBLISH_LIVE=true
-//
-// This library has to be published before VillagersPlus, which declares it as a required
-// dependency. The version string carries the Minecraft version (1.0.0+mc1.21.1) because the
-// library version does not change between Minecraft versions and Modrinth needs it to be unique.
-// ---------------------------------------------------------------------------------------------
+
 publishMods {
 	dryRun = providers.environmentVariable("PUBLISH_LIVE").getOrElse("false") != "true"
 
 	version = project.version
 	type = STABLE
-	// Without this the release is titled after the Gradle artifact name ("villagertradingplus
-	// 1.0.0+mc1.21.1"), which is what players see on the store page.
-	displayName = "VillagerTradingPlus ${rootProject.mod_version} for MC ${rootProject.minecraft_version}"
+	displayName ="VillagerTradingPlus ${rootProject.mod_version} for MC ${rootProject.minecraft_version}"
 	changelog = providers.environmentVariable("CHANGELOG")
 			.getOrElse("See the GitHub release for the changelog.")
 
 	def token = { String env, String property ->
-		// Empty rather than absent: an absent Provider makes the task fail during configuration,
-		// which would break dry runs too. A live run with an empty token fails at the API with 401,
-		// which is the clearer error.
 		providers.environmentVariable(env).orElse(providers.gradleProperty(property)).orElse("")
 	}
 
@@ -90,8 +68,7 @@ publishMods {
 		accessToken = token("CURSEFORGE_TOKEN", "curseforgeToken")
 		projectId = providers.gradleProperty("vtpCurseforgeId").getOrElse("000000")
 		minecraftVersions.add(rootProject.minecraft_version)
-		// CurseForge rejects uploads that declare neither. On the 1.x plugin line these are called
-		// clientRequired/serverRequired; 2.0 renamed them to client/server.
+		// CurseForge rejects uploads that declare neither.
 		clientRequired = true
 		serverRequired = true
 	}

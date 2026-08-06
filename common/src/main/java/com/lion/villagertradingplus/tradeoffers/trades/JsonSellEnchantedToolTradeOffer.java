@@ -49,7 +49,9 @@ public class JsonSellEnchantedToolTradeOffer extends JsonTradeOffer {
             int power = MIN_POWER + random.nextInt(MAX_POWER - MIN_POWER + 1);
             // The pool of candidate enchantments is passed in explicitly now instead of being implied by
             // a boolean: #minecraft:in_enchanting_table is what "as an enchanting table would" means.
-            ItemStack itemStack = EnchantmentHelper.enchant(random, new ItemStack(this.sell.getItem()), power,
+            // Copied rather than rebuilt from the item alone, so the JSON's count and any name, lore
+            // or component sugar on the sell stack survive the random enchanting pass.
+            ItemStack itemStack = EnchantmentHelper.enchant(random, this.sell.copy(), power,
                     entity.getWorld().getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT)
                             .getOrThrow(EnchantmentTags.IN_ENCHANTING_TABLE).stream());
 

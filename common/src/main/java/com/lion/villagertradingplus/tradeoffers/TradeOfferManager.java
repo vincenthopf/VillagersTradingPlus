@@ -182,7 +182,9 @@ public class TradeOfferManager {
         }
 
         try {
-            TradeOffers.Factory factory = adapter.deserialize(trade);
+            // Wrapped innermost, under the conditional and pricing layers, so weighted_pool still
+            // recognises the PricingTradeFactory it strips off its sub-trades.
+            TradeOffers.Factory factory = RegistryRebindFactory.wrap(adapter.deserialize(trade));
 
             if (VillagerTradingPlus.CONFIG.enable_conditional_trades && trade.has("conditions")) {
                 boolean orLogic = "or".equalsIgnoreCase(readString(trade, "logic"));

@@ -2,6 +2,7 @@ package com.lion.villagertradingplus.tradeoffers.catalog;
 
 import com.lion.villagertradingplus.tradeoffers.ConditionalTradeFactory;
 import com.lion.villagertradingplus.tradeoffers.PricingTradeFactory;
+import com.lion.villagertradingplus.tradeoffers.RegistryRebindFactory;
 import com.lion.villagertradingplus.tradeoffers.conditions.ParsedConditions;
 import com.lion.villagertradingplus.tradeoffers.conditions.TradeCondition;
 import net.minecraft.entity.Entity;
@@ -55,6 +56,13 @@ public final class CatalogExpansion {
             out.pushConditions(infos, condition.test(merchant));
             expand(conditional.delegate(), merchant, out);
             out.popConditions();
+            return;
+        }
+
+        // Transparent to the catalogue: it only rebinds registry entries on a created offer, and the
+        // rows below have to keep reaching the factory that knows how to enumerate itself.
+        if (factory instanceof RegistryRebindFactory rebind) {
+            expand(rebind.delegate(), merchant, out);
             return;
         }
 
