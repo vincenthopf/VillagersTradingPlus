@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.VillagerTradingPlus;
+import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.passive.VillagerEntity;
@@ -88,8 +89,8 @@ public final class TradeConditions {
     public static ParsedConditions parse(JsonArray conditions, boolean orLogic) {
         List<ParsedConditions.Entry> parsed = new ArrayList<>();
         for (JsonElement element : conditions) {
-            JsonObject obj = element.getAsJsonObject();
-            String type = stripNamespace(obj.get("type").getAsString());
+            JsonObject obj = JsonFields.asObject(element, "\"conditions\"");
+            String type = stripNamespace(JsonFields.requireString(obj, "trade condition", "type"));
             ConditionType conditionType = REGISTRY.get(type);
             if (conditionType == null) {
                 VillagerTradingPlus.LOGGER.error("Unknown trade condition type: " + type + " -- this trade will be withheld.");
@@ -98,9 +99,10 @@ public final class TradeConditions {
                         villager -> false)); // fail closed
                 continue;
             }
-            parsed.add(new ParsedConditions.Entry(
-                    describeSafely(conditionType, obj, type),
-                    conditionType.parser().apply(obj)));
+            // Parsed before it is described, so a malformed condition fails with one clean message
+                    // instead of first logging that its describer choked on the same missing field.
+                    TradeCondition condition = conditionType.parser().apply(obj);
+                    parsed.add(new ParsedConditions.Entry(describeSafely(conditionType, obj, type), condition));
         }
 
         return new ParsedConditions(List.copyOf(parsed), orLogic);
@@ -137,22 +139,22 @@ public final class TradeConditions {
     private static TradeCondition parseBiome(JsonObject json) {
         if (json.has("tag")) {
             TagKey<net.minecraft.world.biome.Biome> tag = TagKey.of(RegistryKeys.BIOME,
-                    Identifier.tryParse(json.get("tag").getAsString()));
+                    Identifier.tryParse(JsonFields.requireString(json, "\"biome\" condition", "tag")));
             return villager -> villager.getWorld().getBiome(villager.getBlockPos()).isIn(tag);
         }
-        Set<String> biomes = toStringSet(json.getAsJsonArray("biomes"));
+        Set<String> biomes = toStringSet(JsonFields.requireArray(json, "\"biome\" condition", "biomes"));
         return villager -> villager.getWorld().getBiome(villager.getBlockPos()).getKey()
                 .map(key -> biomes.contains(key.getValue().toString()))
                 .orElse(false);
     }
 
     private static TradeCondition parseDimension(JsonObject json) {
-        String dimension = json.get("dimension").getAsString();
+        String dimension = JsonFields.requireString(json, "\"dimension\" condition", "dimension");
         return villager -> villager.getWorld().getRegistryKey().getValue().toString().equals(dimension);
     }
 
     private static TradeCondition parseWeather(JsonObject json) {
-        String state = json.get("state").getAsString();
+        String state = JsonFields.requireString(json, "\"weather\" condition", "state");
         return villager -> {
             World world = villager.getWorld();
             return switch (state) {
@@ -164,20 +166,20 @@ public final class TradeConditions {
     }
 
     private static TradeCondition parseDayNight(JsonObject json) {
-        boolean wantDay = "day".equals(json.get("time").getAsString());
+        boolean wantDay = "day".equals(JsonFields.requireString(json, "\"day_night\" condition", "time"));
         return villager -> villager.getWorld().isDay() == wantDay;
     }
 
     private static TradeCondition parseMoonPhase(JsonObject json) {
         Set<Integer> phases = new HashSet<>();
-        for (JsonElement element : json.getAsJsonArray("phases")) {
+        for (JsonElement element : JsonFields.requireArray(json, "\"moon_phase\" condition", "phases")) {
             phases.add(element.getAsInt());
         }
         return villager -> phases.contains(villager.getWorld().getMoonPhase());
     }
 
     private static TradeCondition parseConfigFlag(JsonObject json) {
-        String fieldName = json.get("field").getAsString();
+        String fieldName = JsonFields.requireString(json, "\"config_flag\" condition", "field");
         boolean expected = !json.has("value") || json.get("value").getAsBoolean();
         return villager -> {
             try {
@@ -191,7 +193,7 @@ public final class TradeConditions {
     }
 
     private static TradeCondition parseGamerule(JsonObject json) {
-        String ruleName = json.get("rule").getAsString();
+        String ruleName = JsonFields.requireString(json, "\"gamerule\" condition", "rule");
         boolean expected = !json.has("value") || json.get("value").getAsBoolean();
         GameRules.Key<GameRules.BooleanRule> key = BOOLEAN_RULES.get(ruleName);
         if (key == null) {
@@ -203,12 +205,12 @@ public final class TradeConditions {
 
     private static TradeCondition parseJobSite(JsonObject json) {
         if (json.has("wood_variant")) {
-            String variant = json.get("wood_variant").getAsString();
+            String variant = JsonFields.requireString(json, "\"job_site_block\" condition", "wood_variant");
             return villager -> jobSiteBlockId(villager)
                     .map(id -> id.getPath().contains(variant))
                     .orElse(false);
         }
-        Set<String> blocks = toStringSet(json.getAsJsonArray("blocks"));
+        Set<String> blocks = toStringSet(JsonFields.requireArray(json, "\"job_site_block\" condition", "blocks"));
         return villager -> jobSiteBlockId(villager)
                 .map(id -> blocks.contains(id.toString()))
                 .orElse(false);

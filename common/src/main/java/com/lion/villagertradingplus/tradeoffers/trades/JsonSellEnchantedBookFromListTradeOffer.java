@@ -1,5 +1,7 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.VillagerTradingPlus;
@@ -51,14 +53,14 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
     public TradeOffers.Factory deserialize(JsonObject json) {
         loadDefaultStats(json);
 
-        ItemStack currency = getItemStackFromJsonWithoutCount(json.get("currency").getAsJsonObject());
+        ItemStack currency = getItemStackFromJsonWithoutCount(JsonFields.requireObject(json, "sell_enchanted_book_from_list trade", "currency"));
 
         // Present while a datapack load is running, which is the only time this parses. Used to read
         // an enchantment's own level bounds as defaults - not to keep the entry, see Entry below.
         Optional<Registry<Enchantment>> registry = DatapackRegistries.registry(RegistryKeys.ENCHANTMENT);
 
         List<Entry> entries = new ArrayList<>();
-        for (JsonElement element : json.getAsJsonArray("enchantments")) {
+        for (JsonElement element : JsonFields.requireArray(json, "sell_enchanted_book_from_list trade", "enchantments")) {
             JsonObject obj = element.getAsJsonObject();
             String id = obj.get("id").getAsString();
             Identifier identifier = Identifier.tryParse(id);

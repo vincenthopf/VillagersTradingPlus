@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpandable;
@@ -29,7 +30,7 @@ public class JsonSellStructureMapTradeOffer extends JsonTradeOffer {
         TagKey<Structure> structure = TagKey.of(RegistryKeys.STRUCTURE, readIdentifier(json, "structure_id", ""));
         String name = readString(json, "name", "");
         ItemStack currency = getItemStackFromJson(json.get("priceIn").getAsJsonObject());
-        ItemStack buy = getItemStackFromJson(json.get("buy").getAsJsonObject());
+        ItemStack buy = getItemStackFromJson(JsonFields.requireObject(json, "sell_structure_map trade", "buy"));
 
         return new Factory(buy, currency, structure, name, maxUses, experience, priceMultiplier);
     }
