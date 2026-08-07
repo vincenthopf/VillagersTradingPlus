@@ -4,8 +4,6 @@ import com.lion.villagertradingplus.client.TradeCatalogClientState;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogEntry;
 import com.lion.villagertradingplus.tradeoffers.catalog.ConditionInfo;
 import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPacket;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -40,7 +38,6 @@ import java.util.Optional;
  * <p>Paging and scrolling are entirely local: the server ships a whole tier in one packet, so moving
  * through a librarian's hundred-odd enchanted books costs nothing.
  */
-@Environment(EnvType.CLIENT)
 public final class TradeCatalogPanel {
 
     /** Full width, used whenever the gutter can take it. */

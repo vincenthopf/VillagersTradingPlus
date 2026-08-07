@@ -42,6 +42,7 @@
   "condition.villagertradingplus.day_night.day": "白天",
   "condition.villagertradingplus.day_night.night": "夜晚",
   "condition.villagertradingplus.moon_phase": "月相：%s",
+  "condition.villagertradingplus.moon_phase_night": "夜间月相：%s",
   "condition.villagertradingplus.config_flag": "配置 %s = %s",
   "condition.villagertradingplus.gamerule": "游戏规则 %s = %s",
   "condition.villagertradingplus.job_site_block": "工作方块：%s",

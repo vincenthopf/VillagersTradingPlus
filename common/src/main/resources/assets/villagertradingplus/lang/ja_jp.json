@@ -42,6 +42,7 @@
   "condition.villagertradingplus.day_night.day": "昼",
   "condition.villagertradingplus.day_night.night": "夜",
   "condition.villagertradingplus.moon_phase": "月相: %s",
+  "condition.villagertradingplus.moon_phase_night": "夜の月相: %s",
   "condition.villagertradingplus.config_flag": "設定 %s = %s",
   "condition.villagertradingplus.gamerule": "ゲームルール %s = %s",
   "condition.villagertradingplus.job_site_block": "職業ブロック: %s",

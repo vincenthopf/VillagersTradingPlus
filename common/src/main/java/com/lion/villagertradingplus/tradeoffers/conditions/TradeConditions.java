@@ -170,12 +170,22 @@ public final class TradeConditions {
         return villager -> villager.getWorld().isDay() == wantDay;
     }
 
+    /**
+     * Matches the lunar day, and by default only while the moon is actually up.
+     *
+     * <p>{@code getMoonPhase()} is {@code getLunarTime() / 24000 % 8}: it names the lunar day and
+     * says nothing about the time within it, so on its own it holds all through the following
+     * daylight hours too - a "full moon" trade would sit there unlocked at noon. Set
+     * {@code "require_night": false} to gate on the bare lunar day anyway.
+     */
     private static TradeCondition parseMoonPhase(JsonObject json) {
         Set<Integer> phases = new HashSet<>();
         for (JsonElement element : JsonFields.requireArray(json, "\"moon_phase\" condition", "phases")) {
             phases.add(element.getAsInt());
         }
-        return villager -> phases.contains(villager.getWorld().getMoonPhase());
+        boolean requireNight = !json.has("require_night") || json.get("require_night").getAsBoolean();
+        return villager -> phases.contains(villager.getWorld().getMoonPhase())
+                && (!requireNight || !villager.getWorld().isDay());
     }
 
     private static TradeCondition parseConfigFlag(JsonObject json) {
@@ -246,7 +256,10 @@ public final class TradeConditions {
     }
 
     private static Text describeMoonPhase(JsonObject json) {
-        return Text.translatable("condition.villagertradingplus.moon_phase", joinArray(json.getAsJsonArray("phases")));
+        boolean requireNight = !json.has("require_night") || json.get("require_night").getAsBoolean();
+        return Text.translatable(
+                requireNight ? "condition.villagertradingplus.moon_phase_night" : "condition.villagertradingplus.moon_phase",
+                joinArray(json.getAsJsonArray("phases")));
     }
 
     private static Text describeConfigFlag(JsonObject json) {

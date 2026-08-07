@@ -43,6 +43,7 @@
   "condition.villagertradingplus.day_night.day": "day",
   "condition.villagertradingplus.day_night.night": "night",
   "condition.villagertradingplus.moon_phase": "Moon phase: %s",
+  "condition.villagertradingplus.moon_phase_night": "Moon phase at night: %s",
   "condition.villagertradingplus.config_flag": "Config %s = %s",
   "condition.villagertradingplus.gamerule": "Gamerule %s = %s",
   "condition.villagertradingplus.job_site_block": "Job site: %s",
