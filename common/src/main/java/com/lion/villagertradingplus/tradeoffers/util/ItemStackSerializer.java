@@ -29,7 +29,7 @@ import java.util.Optional;
  * {@code skull_owner}, {@code book} and a raw {@code nbt} (SNBT) escape hatch applied last.
  *
  * <p>An unresolvable or missing item id raises {@link TradeParseException} so the whole trade is
- * skipped with a logged reason — a blank slot in a villager's trade list is worse than no trade.
+ * skipped with a logged reason; a blank slot in a villager's trade list is worse than no trade.
  * Malformed sugar (e.g. a bad {@code nbt} string) is still logged and skipped rather than throwing,
  * since the stack itself remains usable.
  */

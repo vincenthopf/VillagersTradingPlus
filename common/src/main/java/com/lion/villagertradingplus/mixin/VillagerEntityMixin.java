@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 
 // Extends MerchantEntity so the inherited members this mixin uses (fillRecipesFromPool, getOffers,
-// getWorld) resolve through the real hierarchy — @Shadow only sees members declared on the target itself.
+// getWorld) resolve through the real hierarchy; @Shadow only sees members declared on the target itself.
 @Mixin(VillagerEntity.class)
 public abstract class VillagerEntityMixin extends MerchantEntity implements TradeControl {
 

@@ -13,8 +13,8 @@ import java.util.List;
  * <p>The whole tier ships in one packet so the panel can page and scroll locally with no round-trip.
  * That makes packet size the thing to watch: {@code CustomPayloadS2CPacket} rejects payloads over
  * 1 MiB, measured <em>before</em> compression and enforced on both encode and decode. The row cap in
- * {@link CatalogBuilder#MAX_ENTRIES} is not sufficient on its own — a single heavy-NBT modded item
- * can run to tens of kilobytes — so rows are written into a scratch buffer and cut off at
+ * {@link CatalogBuilder#MAX_ENTRIES} does not bound that on its own, since a single heavy-NBT
+ * modded item can run to tens of kilobytes, so rows are written into a scratch buffer and cut off at
  * {@link #MAX_PAYLOAD_BYTES}. Whatever gets dropped is reported to the player, never silently
  * swallowed.
  */

@@ -85,7 +85,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
         // The control column takes the right gutter and the catalogue takes the left, so the two
         // never compete. The column is width-adaptive because the gutter is not: MerchantScreen is
         // 276 units wide and centred, so at 1920x1080 with GUI scale 4 the screen is only 480 units
-        // across and each gutter is 102 — a fixed 110-wide column does not fit. It used to fall back
+        // across and each gutter only 102, too narrow for a fixed 110-wide column. It used to fall back
         // to stacking below the panel and then get clamped straight back up on top of the trades.
         int gutter = this.width - (this.x + this.backgroundWidth) - gap - margin;
         int rows = 1 + (allowSetLevel ? 1 : 0) + (allowReroll ? 2 : 0) + (allowView ? 1 : 0);
@@ -99,7 +99,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
             row = this.y;
         } else {
             // Only reachable on a window narrower than any standard resolution produces. Sit below
-            // the trade panel and, if that runs off the bottom, ride the bottom edge — overlapping
+            // the trade panel and, if that runs off the bottom, ride the bottom edge; overlapping
             // the hotbar is far less destructive than overlapping the trades.
             w = maxWidth;
             baseX = Math.max(margin, Math.min(this.x, this.width - w - margin));
@@ -180,7 +180,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
     /**
      * Drawn at TAIL so it lands after vanilla's own {@code drawMouseoverTooltip} and after
-     * {@code Screen.render} has drawn the control buttons — the panel is entirely hand-drawn, so
+     * {@code Screen.render} has drawn the control buttons; the panel is entirely hand-drawn, so
      * there are no widgets of ours underneath for it to paint over.
      */
     @Inject(method = "render", at = @At("TAIL"))
@@ -215,8 +215,8 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     }
 
     /**
-     * Vanilla's {@code mouseScrolled} scrolls the trade list from anywhere on screen — it does no
-     * bounds check and never calls {@code super} — so the panel has to claim the wheel explicitly.
+     * Vanilla's {@code mouseScrolled} scrolls the trade list from anywhere on screen: it does no
+     * bounds check and never calls {@code super}, so the panel has to claim the wheel explicitly.
      */
     @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
     private void villagertradingplus$catalogScroll(double mouseX, double mouseY, double amount, CallbackInfoReturnable<Boolean> cir) {

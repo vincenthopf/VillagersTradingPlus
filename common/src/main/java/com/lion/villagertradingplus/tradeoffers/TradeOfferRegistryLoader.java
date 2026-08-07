@@ -15,8 +15,8 @@ public class TradeOfferRegistryLoader {
      * trade file is deserialized.
      *
      * <p>Without this every {@code /reload} appended a fresh copy of each trade to the same lists,
-     * so pools grew on each reload within a session and the same trade could be offered — and
-     * catalogued — several times over. {@code WanderingTraderTradeLoader.begin()} has always done
+     * so pools grew on each reload within a session and the same trade could be offered, and
+     * catalogued, several times over. {@code WanderingTraderTradeLoader.begin()} has always done
      * this for the trader; the villager path had no equivalent.
      */
     public static void begin() {
