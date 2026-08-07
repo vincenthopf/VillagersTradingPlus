@@ -20,7 +20,7 @@ import java.util.Optional;
  * from an {@code "item"} it is a fixed stack (with any NBT sugar baked in).
  *
  * <p>Vanilla {@link net.minecraft.village.TradeOffer} matches one concrete {@link ItemStack}, so a
- * tag input is realised as a single random member per generated offer — not an "any-of" match.
+ * tag input is realised as a single random member per generated offer, not an "any-of" match.
  */
 public final class Ingredient {
 
@@ -67,7 +67,7 @@ public final class Ingredient {
     }
 
     /**
-     * Every stack this ingredient could resolve to — one entry for a fixed ingredient, one per tag
+     * Every stack this ingredient could resolve to: one entry for a fixed ingredient, one per tag
      * member otherwise. Used by the trade catalogue, which lists all the variants a trade can take
      * rather than sampling one.
      */

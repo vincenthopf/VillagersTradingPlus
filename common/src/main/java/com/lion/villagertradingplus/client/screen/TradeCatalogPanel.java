@@ -26,12 +26,12 @@ import java.util.Optional;
  *
  * <p>Everything here is hand-drawn and hand-hit-tested instead of using {@code ButtonWidget}s. The
  * panel is painted from a {@code render} TAIL hook on {@code MerchantScreen}, which runs after
- * {@code Screen.render} has already drawn the screen's widgets — so any widget placed in this area
+ * {@code Screen.render} has already drawn the screen's widgets, so any widget placed in this area
  * would be painted over. Doing the whole panel by hand also puts its tooltip last, above vanilla's.
  *
  * <p><b>The panel is width-adaptive</b>, because the space beside the trade screen varies enormously
  * with GUI scale. {@code MerchantScreen} is 276 units wide and centred, so at 1920x1080 with GUI
- * scale 4 the whole screen is only 480 units across and each side gutter is 102 — a fixed 176-wide
+ * scale 4 the whole screen is only 480 units across and each side gutter is 102, too narrow for a fixed 176-wide
  * panel simply does not fit and used to get clamped on top of the trades. {@link #layout} therefore
  * sizes the panel to the gutter and switches to a tighter row layout when it is narrow.
  *
@@ -79,8 +79,7 @@ public final class TradeCatalogPanel {
     /**
      * Raise applied only when the panel could not avoid overlapping the trade screen. Vanilla draws
      * the merchant's trade items at z 250 and its arrow at 300, so without this they punch through a
-     * panel drawn at z 0 — which is what made an overlapping panel look shattered rather than simply
-     * layered.
+     * panel drawn at z 0, so an overlapping panel reads as shattered rather than layered.
      */
     private static final int OVERLAP_Z = 320;
 
@@ -139,7 +138,7 @@ public final class TradeCatalogPanel {
     /**
      * Toggles the panel, requesting the tier from the server when it is shown.
      *
-     * <p>No clamping here — the merchant-screen level selector always offers 1-5 and the panel does
+     * <p>No clamping here: the merchant-screen level selector always offers 1-5 and the panel does
      * not yet know how many tiers this merchant has. The server clamps against the real count and
      * reports back the tier it actually served, which {@link #render} then adopts.
      */
@@ -530,7 +529,7 @@ public final class TradeCatalogPanel {
 
     /**
      * Chance the merchant draws this trade's slot at all. Vanilla picks {@code tierPicks} distinct
-     * indices out of the tier pool uniformly, so every entry in the pool has the same odds — the
+     * indices out of the tier pool uniformly, so every entry in the pool has the same odds; the
      * per-trade weights in the JSON only ever apply inside a {@code weighted_pool}.
      */
     private static float tierChance(CatalogEntry entry) {

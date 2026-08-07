@@ -80,7 +80,7 @@ public final class TradeConditions {
     /**
      * Parses the {@code conditions} array into a single combined {@link TradeCondition}. Default
      * logic is AND; pass {@code "logic": "or"} on the owning trade object to switch (read separately
-     * — see {@link #parse(JsonArray, boolean)}).
+     *, see {@link #parse(JsonArray, boolean)}).
      */
     public static ParsedConditions parse(JsonArray conditions) {
         return parse(conditions, false);

@@ -17,9 +17,9 @@ import java.util.List;
  *
  * <p>A trade's metadata is not all known at the point a row is emitted: a {@code weighted_pool}
  * knows the weights but not the items, and the leaf factory knows the items but not that it sits
- * inside a pool at all. So the walk maintains three scope stacks — conditions, pool weight and
- * price factor — that each row snapshots on the way out. Push on the way down, pop on the way back
- * up, and arbitrarily nested pools compose correctly without any expander knowing its own depth.
+ * inside a pool at all. So the walk maintains three scope stacks (conditions, pool weight, price
+ * factor) that each row snapshots on the way out. Push on the way down, pop on the way back up, and
+ * arbitrarily nested pools compose without any expander knowing its own depth.
  */
 public final class CatalogBuilder {
 
@@ -92,8 +92,8 @@ public final class CatalogBuilder {
 
     /**
      * Narrows the probability of everything added until {@link #popShare} without claiming a JSON
-     * weight. Used where a factory splits uniformly over variants it enumerates — one enchantment
-     * of forty, one tag member of eight — which is a real chance the player wants to see but is not
+     * weight. Used where a factory splits uniformly over variants it enumerates: one enchantment
+     * of forty, one tag member of eight. That is a real chance the player wants to see but is not
      * a {@code weight} anyone wrote down.
      */
     public void pushShare(float share) {
@@ -125,8 +125,8 @@ public final class CatalogBuilder {
     }
 
     /**
-     * Enters a pricing wrapper. In practice there is only ever one — {@code weighted_pool} strips the
-     * wrapper off its sub-trades so the cost scale is not applied twice — but factors still compose
+     * Enters a pricing wrapper. In practice there is only ever one, since {@code weighted_pool} strips the
+     * wrapper off its sub-trades so the cost scale is not applied twice, but factors still compose
      * multiplicatively here so the catalogue keeps matching a generated offer whatever the nesting.
      */
     public void pushPriceFactor(float factor) {

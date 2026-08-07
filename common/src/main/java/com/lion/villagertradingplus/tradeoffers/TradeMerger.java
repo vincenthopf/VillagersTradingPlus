@@ -21,7 +21,7 @@ public final class TradeMerger {
     ///
     /// The table is global and outlives every reload, while re-parsing produces fresh `Factory`
     /// instances. Identity is the only thing that can tell "already added in this pass" apart from
-    /// "added one reload ago", and it holds only within a single pass — so a reload has to start
+    /// "added one reload ago", and it holds only within a single pass, so a reload has to start
     /// from vanilla instead of from whatever the previous one left behind.
     private static Map<VillagerProfession, Int2ObjectMap<TradeOffers.Factory[]>> vanilla;
 
@@ -32,7 +32,7 @@ public final class TradeMerger {
     }
 
     /// Puts the table back the way vanilla had it. Call once at the start of a reload, before any
-    /// trade file is deserialized. The first call only takes the snapshot — nothing has been
+    /// trade file is deserialized. The first call only takes the snapshot; nothing has been
     /// written yet at that point, which is exactly why it is the one moment vanilla is observable.
     public static void resetToVanilla() {
         if (vanilla == null) {
