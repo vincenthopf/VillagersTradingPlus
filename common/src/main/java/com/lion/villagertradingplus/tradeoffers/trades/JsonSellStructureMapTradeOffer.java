@@ -73,8 +73,8 @@ public class JsonSellStructureMapTradeOffer extends JsonTradeOffer {
 
         /**
          * One row, built without touching the world. {@code create} runs a 100-chunk
-         * {@code locateStructure} scan on the server thread; doing that just to populate a preview —
-         * every time a player opens the catalogue — would stall the server for no benefit. The row
+         * {@code locateStructure} scan on the server thread, and doing that every time a player
+         * opens the catalogue would stall the server for no benefit. The row
          * shows an unfilled map with the trade's own name, which is all the panel can usefully
          * display anyway.
          */

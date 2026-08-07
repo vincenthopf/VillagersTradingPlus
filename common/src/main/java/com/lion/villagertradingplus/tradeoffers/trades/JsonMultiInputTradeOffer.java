@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  * may carry NBT sugar (name, enchantments, etc.) via {@link com.lion.villagertradingplus.tradeoffers.util.ItemStackSerializer}.
  *
  * <p>Note: vanilla {@link TradeOffer} has exactly two buy slots, so "two items plus a separate
- * emerald currency" is not possible — one of the two inputs is the currency.
+ * emerald currency" is not possible; one of the two inputs is the currency.
  *
  * <pre>
  * { "type": "villagertradingplus:multi_input",

@@ -21,7 +21,7 @@ import java.util.List;
  * A rarity wrapper: picks one of N sub-trades by weight at create() time. Each sub-trade is a full
  * trade object routed back through {@link TradeOfferManager#deserializeTrade}, so nested conditions
  * and pricing apply automatically. A picked sub-trade may itself yield {@code null} (e.g. its own
- * condition failed) — that is the intended rarity behaviour.
+ * condition failed); that is the intended rarity behaviour.
  *
  * <pre>
  * { "type": "villagertradingplus:weighted_pool",

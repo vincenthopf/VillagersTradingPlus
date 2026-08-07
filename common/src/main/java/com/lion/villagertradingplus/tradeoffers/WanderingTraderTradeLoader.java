@@ -138,10 +138,8 @@ public final class WanderingTraderTradeLoader {
     }
 
     /**
-     * What vanilla's {@code fillRecipes} iterates, in tier order. The draw count of tier 1 comes
-     * from the config rather than the snapshot, which is what the {@code @ModifyConstant} on
-     * {@code fillRecipes} used to do — that constant no longer exists, vanilla reads the count from
-     * this pair instead.
+     * What vanilla's {@code fillRecipes} iterates, in tier order. Vanilla reads the draw count out
+     * of each pair, so tier 1 takes its count from the config here rather than from the snapshot.
      */
     public static List<Pair<TradeOffers.Factory[], Integer>> pools() {
         ensureBaseline();

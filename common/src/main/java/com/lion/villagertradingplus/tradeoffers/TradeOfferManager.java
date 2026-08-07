@@ -219,7 +219,7 @@ public class TradeOfferManager {
     }
 
     /**
-     * Central choke-point every trade flows through — both top-level trades and nested ones
+     * Central choke-point every trade flows through: both top-level trades and nested ones
      * (e.g. inside {@code weighted_pool}). Deserializes the adapter, then layers the cross-cutting
      * {@code conditions} block and global pricing on top so those features apply to every type
      * without editing individual adapters. Returns {@code null} when the trade type is unknown.

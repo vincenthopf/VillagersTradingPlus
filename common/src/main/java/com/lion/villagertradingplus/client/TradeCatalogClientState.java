@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Static because the packet and the screen have no reference to each other: the reply can land
  * before the panel has laid out, and it has to survive the panel being toggled off and on. Only one
- * catalogue is ever in flight — a player can have exactly one trade screen open — so a single slot
+ * catalogue is ever in flight (a player can have exactly one trade screen open), so a single slot
  * is enough.
  */
 public final class TradeCatalogClientState {

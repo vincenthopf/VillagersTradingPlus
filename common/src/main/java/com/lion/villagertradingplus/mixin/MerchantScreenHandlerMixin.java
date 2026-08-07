@@ -18,8 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * real entity; the catalog's {@code SimpleMerchant} (not a {@link MerchantEntity}) is ignored.
  *
  * <p>Targets {@link ScreenHandler} rather than {@link MerchantScreenHandler} because
- * {@code onButtonClick} is only declared on the superclass, and {@code @Inject} — unlike
- * {@code @Shadow} — can only bind to a method physically present in the target class. The
+ * {@code onButtonClick} is only declared on the superclass, and {@code @Inject}, unlike
+ * {@code @Shadow}, can only bind to a method physically present in the target class. The
  * {@code instanceof} guard below narrows it back to merchant screens.
  */
 @Mixin(ScreenHandler.class)

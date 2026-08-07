@@ -25,7 +25,7 @@ public final class NetworkHelperImpl {
     private NetworkHelperImpl() {
     }
 
-    /** Nothing to do here — see {@link #register(RegisterPayloadHandlersEvent)}. */
+    /** Nothing to do here; see {@link #register(RegisterPayloadHandlersEvent)}. */
     public static void init() {
     }
 
@@ -38,8 +38,8 @@ public final class NetworkHelperImpl {
     }
 
     /**
-     * Called from the mod event bus. The handler is registered on both sides — NeoForge negotiates
-     * the channel and would reject a client that never declared it — but only a client ever has a
+     * Called from the mod event bus. The handler is registered on both sides because NeoForge negotiates
+     * the channel and would reject a client that never declared it, but only a client ever has a
      * receiver to dispatch to, which keeps client-only classes off a server's classpath.
      */
     public static void register(RegisterPayloadHandlersEvent event) {

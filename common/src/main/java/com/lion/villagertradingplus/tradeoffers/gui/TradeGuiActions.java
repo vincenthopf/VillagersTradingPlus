@@ -25,8 +25,8 @@ import net.minecraft.village.TradeOffers;
  *   <li>130+level -> send the read-only catalogue for a tier</li>
  * </ul>
  *
- * <p>The catalogue reply does need its own packet — it carries per-trade metadata that no vanilla
- * screen sync can express — but it rides back to a client whose merchant screen is still open, so
+ * <p>The catalogue reply does need its own packet: it carries per-trade metadata that no vanilla
+ * screen sync can express, but it rides back to a client whose merchant screen is still open, so
  * the request half stays on the vanilla channel.
  */
 public final class TradeGuiActions {

@@ -26,11 +26,9 @@ public abstract class WanderingTraderMixin extends MerchantEntity implements Tra
     }
 
     /**
-     * Replaces the whole vanilla pool rather than patching a constant. Up to 1.21.5 the draw count
-     * was a literal 5 in {@code fillRecipes} and {@code WANDERING_TRADER_TRADES} was a mutable map,
-     * so a {@code @ModifyConstant} plus writing into that map was enough. Since 1.21.6 the list is
-     * immutable, each entry carries its own draw count, and the constant is gone entirely — a
-     * {@code @ModifyConstant} on it would now fail the injection outright at startup.
+     * Replaces the whole vanilla pool rather than patching a constant. {@code WANDERING_TRADER_TRADES}
+     * is an immutable list whose entries carry their own draw count, and {@code fillRecipes} holds no
+     * count constant left to modify: a {@code @ModifyConstant} fails its injection at startup.
      */
     @Redirect(
             method = "fillRecipes",
