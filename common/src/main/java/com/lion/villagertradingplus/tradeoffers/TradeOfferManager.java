@@ -119,11 +119,13 @@ public class TradeOfferManager {
      * vanilla trades instead of adding to them.
      */
     public static void deserializeWanderingTraderJson(JsonObject jsonRoot) {
-        if (jsonRoot.has("replace")) {
-            WanderingTraderTradeLoader.setReplace(jsonRoot.get("replace").getAsBoolean());
-        }
-
         try {
+            // Inside the guard: a "replace" that is not a boolean throws, and out here that would
+            // escape the datapack load and take the world start with it.
+            if (jsonRoot.has("replace")) {
+                WanderingTraderTradeLoader.setReplace(jsonRoot.get("replace").getAsBoolean());
+            }
+
             JsonObject trades = JsonFields.requireObject(jsonRoot, "wandering trader trade file", "trades");
             for (Map.Entry<String, JsonElement> entry : trades.entrySet()) {
                 Integer level = WanderingTraderTradeLoader.LEVEL_MAPPING.get(entry.getKey());

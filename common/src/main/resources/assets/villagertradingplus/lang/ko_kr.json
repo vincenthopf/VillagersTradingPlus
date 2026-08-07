@@ -42,6 +42,7 @@
   "condition.villagertradingplus.day_night.day": "낮",
   "condition.villagertradingplus.day_night.night": "밤",
   "condition.villagertradingplus.moon_phase": "달의 위상: %s",
+  "condition.villagertradingplus.moon_phase_night": "밤의 달 위상: %s",
   "condition.villagertradingplus.config_flag": "설정 %s = %s",
   "condition.villagertradingplus.gamerule": "게임 규칙 %s = %s",
   "condition.villagertradingplus.job_site_block": "직업 블록: %s",
