@@ -2,16 +2,15 @@ package com.lion.villagertradingplus.tradeoffers;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import net.minecraft.village.TradeOffers;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.village.VillagerProfession;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.npc.VillagerProfession;
+import net.minecraft.world.entity.npc.VillagerTrades;
 
 /// Folds everything [TradeOfferRegistryLoader] collected during a reload into vanilla's
 /// `PROFESSION_TO_LEVELED_TRADE`. Shared by both loaders, which differ only in how they hook into
@@ -24,10 +23,10 @@ public final class TradeMerger {
     /// instances. Identity is the only thing that can tell "already added in this pass" apart from
     /// "added one reload ago", and it holds only within a single pass, so a reload has to start
     /// from vanilla instead of from whatever the previous one left behind.
-    private static Map<RegistryKey<VillagerProfession>, Int2ObjectMap<TradeOffers.Factory[]>> vanilla;
+    private static Map<ResourceKey<VillagerProfession>, Int2ObjectMap<VillagerTrades.ItemListing[]>> vanilla;
 
     /// Professions this mod has written to, so resetting touches nothing another mod owns.
-    private static final Set<RegistryKey<VillagerProfession>> TOUCHED = new HashSet<>();
+    private static final Set<ResourceKey<VillagerProfession>> TOUCHED = new HashSet<>();
 
     private TradeMerger() {
     }
@@ -38,18 +37,18 @@ public final class TradeMerger {
     public static void resetToVanilla() {
         if (vanilla == null) {
             vanilla = new HashMap<>();
-            TradeOffers.PROFESSION_TO_LEVELED_TRADE.forEach((profession, levels) -> vanilla.put(profession, copy(levels)));
+            VillagerTrades.TRADES.forEach((profession, levels) -> vanilla.put(profession, copy(levels)));
             return;
         }
 
-        for (RegistryKey<VillagerProfession> profession : TOUCHED) {
-            Int2ObjectMap<TradeOffers.Factory[]> original = vanilla.get(profession);
+        for (ResourceKey<VillagerProfession> profession : TOUCHED) {
+            Int2ObjectMap<VillagerTrades.ItemListing[]> original = vanilla.get(profession);
             if (original == null) {
                 // The profession did not exist in vanilla at all, so restoring it means dropping the
                 // entry rather than writing an empty one.
-                TradeOffers.PROFESSION_TO_LEVELED_TRADE.remove(profession);
+                VillagerTrades.TRADES.remove(profession);
             } else {
-                TradeOffers.PROFESSION_TO_LEVELED_TRADE.put(profession, copy(original));
+                VillagerTrades.TRADES.put(profession, copy(original));
             }
         }
         TOUCHED.clear();
@@ -58,10 +57,10 @@ public final class TradeMerger {
     /// Installs the parsed default trades, replacing whatever a profession had before.
     /// `default_villager_trades` states a profession's base set; `villager_trades` adds to it
     /// afterwards through [#mergeIntoVanilla()].
-    public static void installDefaults(Map<RegistryKey<VillagerProfession>, ? extends Int2ObjectMap<TradeOffers.Factory[]>> defaults) {
+    public static void installDefaults(Map<ResourceKey<VillagerProfession>, ? extends Int2ObjectMap<VillagerTrades.ItemListing[]>> defaults) {
         defaults.forEach((profession, levels) -> {
             TOUCHED.add(profession);
-            TradeOffers.PROFESSION_TO_LEVELED_TRADE.put(profession, levels);
+            VillagerTrades.TRADES.put(profession, levels);
         });
     }
 
@@ -71,11 +70,11 @@ public final class TradeMerger {
             // rather than the vanilla map is what lets a mod ship a profession of its own and fill it
             // purely from JSON - iterating the vanilla side would drop those on the floor.
             TOUCHED.add(profession);
-            Int2ObjectMap<TradeOffers.Factory[]> target =
-                    TradeOffers.PROFESSION_TO_LEVELED_TRADE.computeIfAbsent(profession, ignored -> new Int2ObjectOpenHashMap<>());
+            Int2ObjectMap<VillagerTrades.ItemListing[]> target =
+                    VillagerTrades.TRADES.computeIfAbsent(profession, ignored -> new Int2ObjectOpenHashMap<>());
 
             loadedTrades.forEach((level, loadedLevelTrades) -> {
-                TradeOffers.Factory[] existing = target.get(level.intValue());
+                VillagerTrades.ItemListing[] existing = target.get(level.intValue());
 
                 // distinct() works on identity here, which is the point: installDefaults already put
                 // these very Factory instances into the table, so re-merging them inside the same
@@ -84,13 +83,13 @@ public final class TradeMerger {
                                 existing != null ? Arrays.stream(existing) : Stream.empty(),
                                 Arrays.stream(loadedLevelTrades))
                         .distinct()
-                        .toArray(TradeOffers.Factory[]::new));
+                        .toArray(VillagerTrades.ItemListing[]::new));
             });
         });
     }
 
-    private static Int2ObjectMap<TradeOffers.Factory[]> copy(Int2ObjectMap<TradeOffers.Factory[]> levels) {
-        Int2ObjectMap<TradeOffers.Factory[]> copy = new Int2ObjectOpenHashMap<>();
+    private static Int2ObjectMap<VillagerTrades.ItemListing[]> copy(Int2ObjectMap<VillagerTrades.ItemListing[]> levels) {
+        Int2ObjectMap<VillagerTrades.ItemListing[]> copy = new Int2ObjectOpenHashMap<>();
         levels.forEach((level, factories) -> copy.put(level.intValue(), factories.clone()));
         return copy;
     }

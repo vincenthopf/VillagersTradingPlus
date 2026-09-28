@@ -4,21 +4,20 @@ import com.lion.villagertradingplus.client.TradeCatalogClientState;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogEntry;
 import com.lion.villagertradingplus.tradeoffers.catalog.ConditionInfo;
 import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPacket;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.MathHelper;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * The read-only trade catalogue, drawn as a panel docked against the vanilla trade screen rather
@@ -94,7 +93,7 @@ public final class TradeCatalogPanel {
     /** Button ids, matching the tier ids the merchant screen already sends (130 + level). */
     private static final int CATALOG_REQUEST_BASE = 130;
 
-    private final MinecraftClient client;
+    private final Minecraft client;
 
     private boolean visible;
     private int level = 1;
@@ -119,7 +118,7 @@ public final class TradeCatalogPanel {
     /** Row the cursor was over on the last render, or -1. Reused by the tooltip pass. */
     private int hoveredRow = -1;
 
-    public TradeCatalogPanel(MinecraftClient client) {
+    public TradeCatalogPanel(Minecraft client) {
         this.client = client;
         applyWidth(MAX_WIDTH);
     }
@@ -168,10 +167,10 @@ public final class TradeCatalogPanel {
      * reads as a panel on top rather than as garbled geometry.
      */
     public void layout(int merchantX, int merchantY, int screenWidth, int screenHeight) {
-        applyWidth(MathHelper.clamp(merchantX - DOCK_GAP - SCREEN_MARGIN, MIN_WIDTH, MAX_WIDTH));
+        applyWidth(Mth.clamp(merchantX - DOCK_GAP - SCREEN_MARGIN, MIN_WIDTH, MAX_WIDTH));
 
         this.x = Math.max(SCREEN_MARGIN, merchantX - DOCK_GAP - this.width);
-        this.y = MathHelper.clamp(merchantY, SCREEN_MARGIN,
+        this.y = Mth.clamp(merchantY, SCREEN_MARGIN,
                 Math.max(SCREEN_MARGIN, screenHeight - HEIGHT - SCREEN_MARGIN));
         this.overlapping = this.x + this.width > merchantX;
 
@@ -267,8 +266,8 @@ public final class TradeCatalogPanel {
      */
     private void scrollRows(int delta) {
         int size = entries().size();
-        int lastPageStart = Math.max(0, (MathHelper.ceilDiv(size, ROWS_PER_PAGE) - 1) * ROWS_PER_PAGE);
-        this.firstRow = MathHelper.clamp(this.firstRow + delta, 0, lastPageStart);
+        int lastPageStart = Math.max(0, (Mth.positiveCeilDiv(size, ROWS_PER_PAGE) - 1) * ROWS_PER_PAGE);
+        this.firstRow = Mth.clamp(this.firstRow + delta, 0, lastPageStart);
     }
 
     private static int wrapLevel(int level, int maxLevel) {
@@ -276,12 +275,12 @@ public final class TradeCatalogPanel {
     }
 
     private void playClick() {
-        this.client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+        this.client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
     }
 
     // --- rendering -----------------------------------------------------------------------------
 
-    public void render(DrawContext context, int mouseX, int mouseY) {
+    public void render(GuiGraphics context, int mouseX, int mouseY) {
         if (!this.visible) {
             return;
         }
@@ -294,14 +293,14 @@ public final class TradeCatalogPanel {
         // composited per layer in submission order instead. Starting a new root layer is what "above
         // everything drawn so far" means now, and it does not depend on guessing vanilla's depths.
         if (this.overlapping) {
-            context.createNewRootLayer();
+            context.nextStratum();
         }
 
         drawPanel(context, mouseX, mouseY);
     }
 
-    private void drawPanel(DrawContext context, int mouseX, int mouseY) {
-        TextRenderer font = this.client.textRenderer;
+    private void drawPanel(GuiGraphics context, int mouseX, int mouseY) {
+        Font font = this.client.font;
         drawFrame(context);
 
         // Adopt whatever tier the server actually served, which may be a clamped version of the one
@@ -311,8 +310,8 @@ public final class TradeCatalogPanel {
             this.level = payload.level();
         }
 
-        Text title = label("catalog_title", this.level);
-        context.drawText(font, title, this.x + (this.width - font.getWidth(title)) / 2, this.y + 6, TEXT, false);
+        Component title = label("catalog_title", this.level);
+        context.drawString(font, title, this.x + (this.width - font.width(title)) / 2, this.y + 6, TEXT, false);
 
         if (maxLevel() > 1) {
             drawNavButton(context, NAV_LEFT_X, NAV_Y, "<", mouseX, mouseY);
@@ -320,7 +319,7 @@ public final class TradeCatalogPanel {
         }
 
         if (TradeCatalogClientState.isLoading()) {
-            drawCentered(context, Text.translatable("gui.villagertradingplus.catalog_loading"), FIRST_ROW_Y + 24, TEXT_DIM);
+            drawCentered(context, Component.translatable("gui.villagertradingplus.catalog_loading"), FIRST_ROW_Y + 24, TEXT_DIM);
             this.hoveredRow = -1;
             return;
         }
@@ -339,7 +338,7 @@ public final class TradeCatalogPanel {
         drawTooltip(context, entries, mouseX, mouseY);
     }
 
-    private void drawFrame(DrawContext context) {
+    private void drawFrame(GuiGraphics context) {
         int left = this.x;
         int top = this.y;
         int right = left + this.width;
@@ -352,8 +351,8 @@ public final class TradeCatalogPanel {
         context.fill(right - 1, top, right, bottom, PANEL_SHADOW);
     }
 
-    private void drawRows(DrawContext context, List<CatalogEntry> entries, int mouseX, int mouseY) {
-        TextRenderer font = this.client.textRenderer;
+    private void drawRows(GuiGraphics context, List<CatalogEntry> entries, int mouseX, int mouseY) {
+        Font font = this.client.font;
         this.hoveredRow = -1;
 
         for (int row = 0; row < ROWS_PER_PAGE; row++) {
@@ -382,25 +381,25 @@ public final class TradeCatalogPanel {
                 drawSlot(context, this.x + this.buy2X, rowY);
                 drawStack(context, entry.secondBuy(), this.x + this.buy2X, rowY);
             }
-            context.drawText(font, Text.literal("->"), this.x + this.arrowX, rowY + 4, TEXT, false);
+            context.drawString(font, Component.literal("->"), this.x + this.arrowX, rowY + 4, TEXT, false);
             drawSlot(context, this.x + this.sellX, rowY);
             drawStack(context, entry.sell(), this.x + this.sellX, rowY);
 
             if (this.showMarker && !entry.conditions().isEmpty()) {
-                context.drawText(font, Text.literal("!"), this.x + this.markerX, rowY + 5,
+                context.drawString(font, Component.literal("!"), this.x + this.markerX, rowY + 5,
                         entry.conditionsMet() ? TEXT_DIM : TEXT_GATED, false);
             }
 
             if (this.showChance) {
                 String chance = percent(overallChance(entry));
-                context.drawText(font, Text.literal(chance),
-                        this.x + this.width - 8 - font.getWidth(chance), rowY + 5, TEXT_DIM, false);
+                context.drawString(font, Component.literal(chance),
+                        this.x + this.width - 8 - font.width(chance), rowY + 5, TEXT_DIM, false);
             }
         }
     }
 
-    private void drawFooter(DrawContext context, List<CatalogEntry> entries, int mouseX, int mouseY) {
-        int pageCount = Math.max(1, MathHelper.ceilDiv(entries.size(), ROWS_PER_PAGE));
+    private void drawFooter(GuiGraphics context, List<CatalogEntry> entries, int mouseX, int mouseY) {
+        int pageCount = Math.max(1, Mth.positiveCeilDiv(entries.size(), ROWS_PER_PAGE));
         int page = this.firstRow / ROWS_PER_PAGE + 1;
 
         if (entries.size() > ROWS_PER_PAGE) {
@@ -409,7 +408,7 @@ public final class TradeCatalogPanel {
         }
 
         TradeCatalogPacket.Payload payload = TradeCatalogClientState.current();
-        Text footer = payload != null && payload.omitted() > 0
+        Component footer = payload != null && payload.omitted() > 0
                 ? label("catalog_truncated", entries.size(), entries.size() + payload.omitted())
                 : label("catalog_page", page, pageCount);
         drawCentered(context, footer, FOOTER_Y + 6, TEXT);
@@ -420,11 +419,11 @@ public final class TradeCatalogPanel {
      * the panel is barely wider than its three slots, and a centred string that overflows would spill
      * out over the trade screen.
      */
-    private Text label(String key, Object... args) {
-        return Text.translatable("gui.villagertradingplus." + key + (this.compact ? "_short" : ""), args);
+    private Component label(String key, Object... args) {
+        return Component.translatable("gui.villagertradingplus." + key + (this.compact ? "_short" : ""), args);
     }
 
-    private void drawTooltip(DrawContext context, List<CatalogEntry> entries, int mouseX, int mouseY) {
+    private void drawTooltip(GuiGraphics context, List<CatalogEntry> entries, int mouseX, int mouseY) {
         if (this.hoveredRow < 0 || this.hoveredRow >= entries.size()) {
             return;
         }
@@ -433,13 +432,13 @@ public final class TradeCatalogPanel {
         int rowY = this.y + FIRST_ROW_Y + (this.hoveredRow - this.firstRow) * ROW_STEP;
         ItemStack hoveredStack = stackAt(entry, mouseX, mouseY, rowY);
 
-        List<Text> lines = hoveredStack.isEmpty()
+        List<Component> lines = hoveredStack.isEmpty()
                 ? new ArrayList<>()
                 : Screen.getTooltipFromItem(this.client, hoveredStack);
         appendMetadata(lines, entry);
 
-        context.drawTooltip(this.client.textRenderer, lines,
-                hoveredStack.isEmpty() ? Optional.empty() : hoveredStack.getTooltipData(),
+        context.setTooltipForNextFrame(this.client.font, lines,
+                hoveredStack.isEmpty() ? Optional.empty() : hoveredStack.getTooltipImage(),
                 mouseX, mouseY);
     }
 
@@ -469,56 +468,56 @@ public final class TradeCatalogPanel {
      * trade is to be rolled, what gates it, and the numbers behind its pricing. Everything the row
      * itself had to drop for width still shows up here.
      */
-    private void appendMetadata(List<Text> lines, CatalogEntry entry) {
+    private void appendMetadata(List<Component> lines, CatalogEntry entry) {
         if (!lines.isEmpty()) {
-            lines.add(Text.empty());
+            lines.add(Component.empty());
         }
 
         if (entry.tierPoolSize() > 0) {
-            lines.add(Text.translatable("gui.villagertradingplus.tooltip.chance",
+            lines.add(Component.translatable("gui.villagertradingplus.tooltip.chance",
                             entry.tierPoolSize(), entry.tierPicks(), percent(tierChance(entry)))
-                    .formatted(Formatting.GRAY));
+                    .withStyle(ChatFormatting.GRAY));
         }
         if (entry.isPooled()) {
-            lines.add(Text.translatable("gui.villagertradingplus.tooltip.pool_share",
+            lines.add(Component.translatable("gui.villagertradingplus.tooltip.pool_share",
                             entry.poolWeight(), entry.poolTotalWeight(),
                             percent((float) entry.poolWeight() / entry.poolTotalWeight()))
-                    .formatted(Formatting.GRAY));
+                    .withStyle(ChatFormatting.GRAY));
         }
         if (entry.poolShare() < 1.0f) {
-            lines.add(Text.translatable("gui.villagertradingplus.tooltip.combined_share",
+            lines.add(Component.translatable("gui.villagertradingplus.tooltip.combined_share",
                             percent(overallChance(entry)))
-                    .formatted(Formatting.GRAY));
+                    .withStyle(ChatFormatting.GRAY));
         }
 
         if (!entry.conditions().isEmpty()) {
-            lines.add(Text.empty());
-            lines.add(Text.translatable("gui.villagertradingplus.tooltip.conditions")
-                    .formatted(entry.conditionsMet() ? Formatting.GREEN : Formatting.GOLD));
+            lines.add(Component.empty());
+            lines.add(Component.translatable("gui.villagertradingplus.tooltip.conditions")
+                    .withStyle(entry.conditionsMet() ? ChatFormatting.GREEN : ChatFormatting.GOLD));
             for (ConditionInfo condition : entry.conditions()) {
-                lines.add(Text.literal(condition.satisfied() ? " ✔ " : " ✘ ")
+                lines.add(Component.literal(condition.satisfied() ? " ✔ " : " ✘ ")
                         .append(condition.description())
-                        .formatted(condition.satisfied() ? Formatting.GREEN : Formatting.RED));
+                        .withStyle(condition.satisfied() ? ChatFormatting.GREEN : ChatFormatting.RED));
             }
         }
 
-        lines.add(Text.empty());
-        lines.add(Text.translatable("gui.villagertradingplus.tooltip.economics").formatted(Formatting.DARK_GRAY));
-        lines.add(Text.translatable("gui.villagertradingplus.tooltip.max_uses", entry.maxUses())
-                .formatted(Formatting.DARK_GRAY));
-        lines.add(Text.translatable("gui.villagertradingplus.tooltip.experience", entry.villagerExperience())
-                .formatted(Formatting.DARK_GRAY));
-        lines.add(Text.translatable("gui.villagertradingplus.tooltip.price_multiplier",
+        lines.add(Component.empty());
+        lines.add(Component.translatable("gui.villagertradingplus.tooltip.economics").withStyle(ChatFormatting.DARK_GRAY));
+        lines.add(Component.translatable("gui.villagertradingplus.tooltip.max_uses", entry.maxUses())
+                .withStyle(ChatFormatting.DARK_GRAY));
+        lines.add(Component.translatable("gui.villagertradingplus.tooltip.experience", entry.villagerExperience())
+                .withStyle(ChatFormatting.DARK_GRAY));
+        lines.add(Component.translatable("gui.villagertradingplus.tooltip.price_multiplier",
                         String.format(Locale.ROOT, "%.2f", entry.priceMultiplier()))
-                .formatted(Formatting.DARK_GRAY));
+                .withStyle(ChatFormatting.DARK_GRAY));
         if (entry.demand() != 0) {
-            lines.add(Text.translatable("gui.villagertradingplus.tooltip.demand", entry.demand())
-                    .formatted(Formatting.DARK_GRAY));
+            lines.add(Component.translatable("gui.villagertradingplus.tooltip.demand", entry.demand())
+                    .withStyle(ChatFormatting.DARK_GRAY));
         }
         if (entry.hasPriceRange()) {
-            lines.add(Text.translatable("gui.villagertradingplus.tooltip.price_range",
+            lines.add(Component.translatable("gui.villagertradingplus.tooltip.price_range",
                             entry.minPrice(), entry.maxPrice())
-                    .formatted(Formatting.DARK_GRAY));
+                    .withStyle(ChatFormatting.DARK_GRAY));
         }
     }
 
@@ -557,7 +556,7 @@ public final class TradeCatalogPanel {
         return payload == null ? 1 : payload.maxLevel();
     }
 
-    private void drawNavButton(DrawContext context, int localX, int localY, String label, int mouseX, int mouseY) {
+    private void drawNavButton(GuiGraphics context, int localX, int localY, String label, int mouseX, int mouseY) {
         int left = this.x + localX;
         int top = this.y + localY;
         boolean hovered = mouseX >= left && mouseX < left + NAV_SIZE && mouseY >= top && mouseY < top + NAV_SIZE;
@@ -566,27 +565,27 @@ public final class TradeCatalogPanel {
         context.fill(left + 1, top + 1, left + NAV_SIZE - 1, top + NAV_SIZE - 1,
                 hovered ? BUTTON_HOVER : BUTTON_FILL);
 
-        TextRenderer font = this.client.textRenderer;
-        context.drawText(font, label, left + (NAV_SIZE - font.getWidth(label)) / 2, top + 6, BUTTON_LABEL, true);
+        Font font = this.client.font;
+        context.drawString(font, label, left + (NAV_SIZE - font.width(label)) / 2, top + 6, BUTTON_LABEL, true);
     }
 
     /** Draws a vanilla-looking 18x18 slot hole around the 16x16 item area at (x, y). */
-    private void drawSlot(DrawContext context, int slotX, int slotY) {
+    private void drawSlot(GuiGraphics context, int slotX, int slotY) {
         context.fill(slotX - 1, slotY - 1, slotX + 17, slotY + 17, SLOT_BORDER);
         context.fill(slotX, slotY, slotX + 16, slotY + 16, SLOT_FILL);
     }
 
-    private void drawStack(DrawContext context, ItemStack stack, int slotX, int slotY) {
+    private void drawStack(GuiGraphics context, ItemStack stack, int slotX, int slotY) {
         if (stack.isEmpty()) {
             return;
         }
-        context.drawItemWithoutEntity(stack, slotX, slotY);
-        context.drawStackOverlay(this.client.textRenderer, stack, slotX, slotY);
+        context.renderFakeItem(stack, slotX, slotY);
+        context.renderItemDecorations(this.client.font, stack, slotX, slotY);
     }
 
-    private void drawCentered(DrawContext context, Text text, int localY, int color) {
-        TextRenderer font = this.client.textRenderer;
-        context.drawText(font, text, this.x + (this.width - font.getWidth(text)) / 2, this.y + localY, color, false);
+    private void drawCentered(GuiGraphics context, Component text, int localY, int color) {
+        Font font = this.client.font;
+        context.drawString(font, text, this.x + (this.width - font.width(text)) / 2, this.y + localY, color, false);
     }
 
     private static boolean inRect(int px, int py, int rx, int ry, int rw, int rh) {

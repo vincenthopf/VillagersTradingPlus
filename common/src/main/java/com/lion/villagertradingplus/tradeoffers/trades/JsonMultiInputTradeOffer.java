@@ -1,19 +1,19 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.trading.MerchantOffer;
 import com.google.gson.JsonObject;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A trade taking two inputs for one output, using vanilla's two buy slots. The {@code sell} stack
  * may carry NBT sugar (name, enchantments, etc.) via {@link com.lion.villagertradingplus.tradeoffers.util.ItemStackSerializer}.
  *
- * <p>Note: vanilla {@link TradeOffer} has exactly two buy slots, so "two items plus a separate
+ * <p>Note: vanilla {@link MerchantOffer} has exactly two buy slots, so "two items plus a separate
  * emerald currency" is not possible; one of the two inputs is the currency.
  *
  * <pre>
@@ -28,7 +28,7 @@ public class JsonMultiInputTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public TradeOffers.Factory deserialize(JsonObject json) {
+    public VillagerTrades.ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
         ItemStack inputA = getItemStackFromJson(JsonFields.requireObject(json, "multi_input trade", "input_a"));
         ItemStack inputB = getItemStackFromJson(JsonFields.requireObject(json, "multi_input trade", "input_b"));
@@ -36,7 +36,7 @@ public class JsonMultiInputTradeOffer extends JsonTradeOffer {
         return new Factory(inputA, inputB, sell, maxUses, experience, priceMultiplier, demand);
     }
 
-    private static class Factory implements TradeOffers.Factory {
+    private static class Factory implements VillagerTrades.ItemListing {
         private final ItemStack inputA;
         private final ItemStack inputB;
         private final ItemStack sell;
@@ -56,8 +56,8 @@ public class JsonMultiInputTradeOffer extends JsonTradeOffer {
         }
 
         @Override
-        public TradeOffer create(Entity entity, Random random) {
-            return new TradeOffer(traded(inputA.copy()), tradedOrEmpty(inputB.copy()), sell.copy(), 0, maxUses, experience, multiplier, demand);
+        public MerchantOffer getOffer(Entity entity, RandomSource random) {
+            return new MerchantOffer(traded(inputA.copy()), tradedOrEmpty(inputB.copy()), sell.copy(), 0, maxUses, experience, multiplier, demand);
         }
     }
 }

@@ -1,11 +1,11 @@
 package com.lion.villagertradingplus.tradeoffers.catalog;
 
 import com.lion.villagertradingplus.VillagerTradingPlus;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * One slice of a trade catalogue on the wire.
@@ -24,23 +24,23 @@ import net.minecraft.util.Identifier;
  * @param count  how many slices the catalogue was cut into
  * @param data   the raw bytes of this slice
  */
-public record TradeCatalogPayload(int index, int count, byte[] data) implements CustomPayload {
+public record TradeCatalogPayload(int index, int count, byte[] data) implements CustomPacketPayload {
 
-    public static final CustomPayload.Id<TradeCatalogPayload> ID =
-            new CustomPayload.Id<>(Identifier.of(VillagerTradingPlus.MOD_ID, "trade_catalog"));
+    public static final CustomPacketPayload.Type<TradeCatalogPayload> ID =
+            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID, "trade_catalog"));
 
     /**
      * Bounded on decode: the length prefix comes off the wire, so an unbounded array codec would let
      * a bad packet size an allocation for us.
      */
-    public static final PacketCodec<PacketByteBuf, TradeCatalogPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.VAR_INT, TradeCatalogPayload::index,
-            PacketCodecs.VAR_INT, TradeCatalogPayload::count,
-            PacketCodecs.byteArray(TradeCatalogPacket.MAX_SLICE_BYTES), TradeCatalogPayload::data,
+    public static final StreamCodec<FriendlyByteBuf, TradeCatalogPayload> CODEC = StreamCodec.composite(
+            ByteBufCodecs.VAR_INT, TradeCatalogPayload::index,
+            ByteBufCodecs.VAR_INT, TradeCatalogPayload::count,
+            ByteBufCodecs.byteArray(TradeCatalogPacket.MAX_SLICE_BYTES), TradeCatalogPayload::data,
             TradeCatalogPayload::new);
 
     @Override
-    public CustomPayload.Id<? extends CustomPayload> getId() {
+    public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

@@ -7,28 +7,28 @@ import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpandable;
 import com.lion.villagertradingplus.tradeoffers.util.DatapackRegistries;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.EnchantmentLevelEntry;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.tag.EnchantmentTags;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.EnchantmentTags;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.EnchantmentInstance;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.level.Level;
 
 /**
  * Sells an enchanted book whose enchantment is a weighted random pick from a curated list, each
@@ -49,24 +49,24 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public TradeOffers.Factory deserialize(JsonObject json) {
+    public VillagerTrades.ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack currency = getItemStackFromJsonWithoutCount(JsonFields.requireObject(json, "sell_enchanted_book_from_list trade", "currency"));
 
         // Present while a datapack load is running, which is the only time this parses. Used to read
         // an enchantment's own level bounds as defaults - not to keep the entry, see Entry below.
-        Optional<Registry<Enchantment>> registry = DatapackRegistries.registry(RegistryKeys.ENCHANTMENT);
+        Optional<Registry<Enchantment>> registry = DatapackRegistries.registry(Registries.ENCHANTMENT);
 
         List<Entry> entries = new ArrayList<>();
         for (JsonElement element : JsonFields.requireArray(json, "sell_enchanted_book_from_list trade", "enchantments")) {
             JsonObject obj = element.getAsJsonObject();
             String id = obj.get("id").getAsString();
-            Identifier identifier = Identifier.tryParse(id);
+            ResourceLocation identifier = ResourceLocation.tryParse(id);
 
-            Optional<RegistryEntry.Reference<Enchantment>> enchantment = identifier == null
+            Optional<Holder.Reference<Enchantment>> enchantment = identifier == null
                     ? Optional.empty()
-                    : registry.flatMap(r -> r.getOptional(RegistryKey.of(RegistryKeys.ENCHANTMENT, identifier)));
+                    : registry.flatMap(r -> r.get(ResourceKey.create(Registries.ENCHANTMENT, identifier)));
 
             if (enchantment.isEmpty()) {
                 VillagerTradingPlus.LOGGER.error("Unknown enchantment in sell_enchanted_book_from_list: {}", id);
@@ -75,7 +75,7 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
 
             Enchantment value = enchantment.get().value();
             entries.add(new Entry(
-                    RegistryKey.of(RegistryKeys.ENCHANTMENT, identifier),
+                    ResourceKey.create(Registries.ENCHANTMENT, identifier),
                     readInt(obj, "min_level", value.getMinLevel()),
                     readInt(obj, "max_level", value.getMaxLevel()),
                     readInt(obj, "weight", 1)));
@@ -94,14 +94,14 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
      * this was parsed against, and a captured entry would point into a world that has since been
      * closed. Resolution happens per call, where an {@link Entity} supplies the live registry.
      */
-    private record Entry(RegistryKey<Enchantment> key, int minLevel, int maxLevel, int weight) {
+    private record Entry(ResourceKey<Enchantment> key, int minLevel, int maxLevel, int weight) {
     }
 
     /** An {@link Entry} paired with the entry it resolved to in the world being traded in. */
-    private record Resolved(Entry entry, RegistryEntry<Enchantment> enchantment) {
+    private record Resolved(Entry entry, Holder<Enchantment> enchantment) {
     }
 
-    private static class Factory implements TradeOffers.Factory, CatalogExpandable {
+    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
         private final ItemStack currency;
         private final List<Entry> entries;
         private final int baseCost;
@@ -126,17 +126,17 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
         }
 
         @Override
-        public TradeOffer create(Entity entity, Random random) {
-            List<Resolved> resolved = resolve(entity.getWorld());
+        public MerchantOffer getOffer(Entity entity, RandomSource random) {
+            List<Resolved> resolved = resolve(entity.level());
             int totalWeight = totalWeight(resolved);
             if (totalWeight <= 0) {
                 return null;
             }
 
             Resolved chosen = pick(resolved, totalWeight, random);
-            int level = MathHelper.nextInt(random, chosen.entry().minLevel(), chosen.entry().maxLevel());
+            int level = Mth.nextInt(random, chosen.entry().minLevel(), chosen.entry().maxLevel());
 
-            return new TradeOffer(traded(new ItemStack(currency.getItem(), cost(chosen.enchantment(), level))),
+            return new MerchantOffer(traded(new ItemStack(currency.getItem(), cost(chosen.enchantment(), level))),
                     tradedOrEmpty(new ItemStack(Items.BOOK)), book(chosen.enchantment(), level),
                     0, maxUses, experience, multiplier, demand);
         }
@@ -147,7 +147,7 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
          */
         @Override
         public void expandCatalog(Entity merchant, CatalogBuilder out) {
-            List<Resolved> resolved = resolve(merchant.getWorld());
+            List<Resolved> resolved = resolve(merchant.level());
             int totalWeight = totalWeight(resolved);
 
             for (Resolved candidate : resolved) {
@@ -176,11 +176,11 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
          * on the weights they compete with - a missing enchantment must not leave a hole in the odds
          * that only one of the two knows about.
          */
-        private List<Resolved> resolve(World world) {
-            Registry<Enchantment> registry = world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT);
+        private List<Resolved> resolve(Level world) {
+            Registry<Enchantment> registry = world.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
             List<Resolved> resolved = new ArrayList<>(this.entries.size());
             for (Entry entry : this.entries) {
-                registry.getOptional(entry.key()).ifPresent(enchantment -> resolved.add(new Resolved(entry, enchantment)));
+                registry.get(entry.key()).ifPresent(enchantment -> resolved.add(new Resolved(entry, enchantment)));
             }
             return resolved;
         }
@@ -193,21 +193,21 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
             return total;
         }
 
-        private ItemStack book(RegistryEntry<Enchantment> enchantment, int level) {
-            return EnchantmentHelper.getEnchantedBookWith(new EnchantmentLevelEntry(enchantment, level));
+        private ItemStack book(Holder<Enchantment> enchantment, int level) {
+            return EnchantmentHelper.createBook(new EnchantmentInstance(enchantment, level));
         }
 
-        private int cost(RegistryEntry<Enchantment> enchantment, int level) {
+        private int cost(Holder<Enchantment> enchantment, int level) {
             int cost = baseCost + level * costPerLevel;
             // isTreasure() is gone; which enchantments cost double in a trade is data-driven now, and
             // this is the tag vanilla created for exactly that decision.
-            if (enchantment.isIn(EnchantmentTags.DOUBLE_TRADE_PRICE)) {
+            if (enchantment.is(EnchantmentTags.DOUBLE_TRADE_PRICE)) {
                 cost *= treasureMultiplier;
             }
-            return MathHelper.clamp(cost, 1, 64);
+            return Mth.clamp(cost, 1, 64);
         }
 
-        private static Resolved pick(List<Resolved> resolved, int totalWeight, Random random) {
+        private static Resolved pick(List<Resolved> resolved, int totalWeight, RandomSource random) {
             int roll = random.nextInt(totalWeight);
             for (Resolved candidate : resolved) {
                 roll -= candidate.entry().weight();

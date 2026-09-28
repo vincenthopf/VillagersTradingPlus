@@ -1,18 +1,18 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.trading.MerchantOffer;
 import com.google.gson.JsonObject;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
 import org.jetbrains.annotations.NotNull;
 
 public class JsonProcessItemTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public TradeOffers.Factory deserialize(JsonObject json) {
+    public VillagerTrades.ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack sell = getItemStackFromJson(JsonFields.requireObject(json, "process_item trade", "sell"));
@@ -22,7 +22,7 @@ public class JsonProcessItemTradeOffer extends JsonTradeOffer {
         return new Factory(buy, sell, currency, maxUses, experience, priceMultiplier, demand);
     }
 
-    private static class Factory implements TradeOffers.Factory {
+    private static class Factory implements VillagerTrades.ItemListing {
         private final ItemStack buy;
         private final ItemStack sell;
         private final ItemStack currency;
@@ -41,8 +41,8 @@ public class JsonProcessItemTradeOffer extends JsonTradeOffer {
             this.demand = demand;
         }
 
-        public TradeOffer create(Entity entity, net.minecraft.util.math.random.Random random) {
-            return new TradeOffer(traded(buy), tradedOrEmpty(currency), sell, 0, this.maxUses, this.experience, this.multiplier, this.demand);
+        public MerchantOffer getOffer(Entity entity, net.minecraft.util.RandomSource random) {
+            return new MerchantOffer(traded(buy), tradedOrEmpty(currency), sell, 0, this.maxUses, this.experience, this.multiplier, this.demand);
         }
 
     }

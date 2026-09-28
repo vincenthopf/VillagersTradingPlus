@@ -7,36 +7,35 @@ import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.SharedConstants;
-import net.minecraft.component.ComponentChanges;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.DyedColorComponent;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.component.type.LoreComponent;
-import net.minecraft.component.type.PotionContentsComponent;
-import net.minecraft.component.type.ProfileComponent;
-import net.minecraft.component.type.WrittenBookContentComponent;
-import net.minecraft.datafixer.Schemas;
-import net.minecraft.datafixer.TypeReferences;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.RegistryOps;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.text.RawFilteredPair;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextCodecs;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.network.Filterable;
+import net.minecraft.util.datafix.DataFixers;
+import net.minecraft.util.datafix.fixes.References;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.item.component.ItemLore;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.world.item.component.WrittenBookContent;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -68,7 +67,7 @@ public final class ItemStackSerializer {
         }
 
         String id = idElement.getAsString();
-        Optional<Item> item = Registries.ITEM.getOptionalValue(Identifier.tryParse(id));
+        Optional<Item> item = BuiltInRegistries.ITEM.getOptional(ResourceLocation.tryParse(id));
         if (item.isEmpty()) {
             throw new TradeParseException("unknown item id \"" + id
                     + "\" (is the mod that provides it installed?)");
@@ -90,7 +89,7 @@ public final class ItemStackSerializer {
         }
 
         if (json.has("name")) {
-            stack.set(DataComponentTypes.CUSTOM_NAME, parseText(json.get("name")));
+            stack.set(DataComponents.CUSTOM_NAME, parseText(json.get("name")));
         }
 
         if (json.has("lore")) {
@@ -104,19 +103,19 @@ public final class ItemStackSerializer {
         // No DyeableItem check any more: dyeing is a component, so any item can carry a colour and
         // the game simply ignores it on items that do not render one.
         if (json.has("color")) {
-            stack.set(DataComponentTypes.DYED_COLOR,
-                    new DyedColorComponent(parseColor(json.get("color").getAsString())));
+            stack.set(DataComponents.DYED_COLOR,
+                    new DyedItemColor(parseColor(json.get("color").getAsString())));
         }
 
         if (json.has("potion")) {
-            Registries.POTION.getEntry(Identifier.tryParse(json.get("potion").getAsString()))
-                    .ifPresent(potion -> stack.set(DataComponentTypes.POTION_CONTENTS,
-                            new PotionContentsComponent(potion)));
+            BuiltInRegistries.POTION.get(ResourceLocation.tryParse(json.get("potion").getAsString()))
+                    .ifPresent(potion -> stack.set(DataComponents.POTION_CONTENTS,
+                            new PotionContents(potion)));
         }
 
         if (json.has("skull_owner")) {
-            stack.set(DataComponentTypes.PROFILE,
-                    new ProfileComponent(Optional.of(json.get("skull_owner").getAsString()),
+            stack.set(DataComponents.PROFILE,
+                    new ResolvableProfile(Optional.of(json.get("skull_owner").getAsString()),
                             Optional.empty(), new com.mojang.authlib.properties.PropertyMap()));
         }
 
@@ -144,7 +143,7 @@ public final class ItemStackSerializer {
      * world does not have loaded.
      */
     private static void applyEnchantments(ItemStack stack, JsonArray enchantments) {
-        Optional<Registry<Enchantment>> registry = DatapackRegistries.registry(RegistryKeys.ENCHANTMENT);
+        Optional<Registry<Enchantment>> registry = DatapackRegistries.registry(Registries.ENCHANTMENT);
         if (registry.isEmpty()) {
             VillagerTradingPlus.LOGGER.error(
                     "Cannot resolve \"enchantments\" on a trade item: no datapack registries are loaded. "
@@ -154,8 +153,8 @@ public final class ItemStackSerializer {
 
         // Built on top of what the stack already carries so repeated application accumulates instead
         // of overwriting - a tag-resolved Ingredient re-applies this sugar per random pick.
-        ItemEnchantmentsComponent.Builder builder =
-                new ItemEnchantmentsComponent.Builder(EnchantmentHelper.getEnchantments(stack));
+        ItemEnchantments.Mutable builder =
+                new ItemEnchantments.Mutable(EnchantmentHelper.getEnchantmentsForCrafting(stack));
         boolean applied = false;
 
         for (JsonElement element : enchantments) {
@@ -166,10 +165,10 @@ public final class ItemStackSerializer {
             }
 
             String id = entry.get("id").getAsString();
-            Identifier identifier = Identifier.tryParse(id);
-            Optional<RegistryEntry.Reference<Enchantment>> enchantment = identifier == null
+            ResourceLocation identifier = ResourceLocation.tryParse(id);
+            Optional<Holder.Reference<Enchantment>> enchantment = identifier == null
                     ? Optional.empty()
-                    : registry.get().getOptional(RegistryKey.of(RegistryKeys.ENCHANTMENT, identifier));
+                    : registry.get().get(ResourceKey.create(Registries.ENCHANTMENT, identifier));
 
             if (enchantment.isEmpty()) {
                 VillagerTradingPlus.LOGGER.error("Unknown enchantment in trade item: {}", id);
@@ -183,31 +182,31 @@ public final class ItemStackSerializer {
         if (applied) {
             // Routes to stored_enchantments on an enchanted book and to enchantments on anything else,
             // which is the split the old EnchantedBookItem fork did by hand.
-            EnchantmentHelper.set(stack, builder.build());
+            EnchantmentHelper.setEnchantments(stack, builder.toImmutable());
         }
     }
 
     private static void applyLore(ItemStack stack, JsonArray lore) {
-        List<Text> lines = new ArrayList<>();
+        List<Component> lines = new ArrayList<>();
         for (JsonElement line : lore) {
             lines.add(parseText(line));
         }
-        stack.set(DataComponentTypes.LORE, new LoreComponent(lines));
+        stack.set(DataComponents.LORE, new ItemLore(lines));
     }
 
     private static void applyBook(ItemStack stack, JsonObject book) {
         String title = book.has("title") ? book.get("title").getAsString() : "";
         String author = book.has("author") ? book.get("author").getAsString() : "";
 
-        List<RawFilteredPair<Text>> pages = new ArrayList<>();
+        List<Filterable<Component>> pages = new ArrayList<>();
         if (book.has("pages")) {
             for (JsonElement page : book.getAsJsonArray("pages")) {
-                pages.add(RawFilteredPair.of(parseText(page)));
+                pages.add(Filterable.passThrough(parseText(page)));
             }
         }
 
-        stack.set(DataComponentTypes.WRITTEN_BOOK_CONTENT,
-                new WrittenBookContentComponent(RawFilteredPair.of(title), author, 0, pages, true));
+        stack.set(DataComponents.WRITTEN_BOOK_CONTENT,
+                new WrittenBookContent(Filterable.passThrough(title), author, 0, pages, true));
     }
 
     /**
@@ -232,8 +231,8 @@ public final class ItemStackSerializer {
      */
     private static void applyRawNbt(ItemStack stack, String snbt) {
         try {
-            NbtCompound parsed = StringNbtReader.readCompound(snbt);
-            componentize(stack, parsed).ifPresent(stack::applyChanges);
+            CompoundTag parsed = TagParser.parseCompoundFully(snbt);
+            componentize(stack, parsed).ifPresent(stack::applyComponentsAndValidate);
         } catch (Exception e) {
             VillagerTradingPlus.LOGGER.error("Failed to parse trade item nbt: " + snbt, e);
         }
@@ -247,8 +246,8 @@ public final class ItemStackSerializer {
      */
     private static final int RAW_NBT_DATA_VERSION = 3465;
 
-    private static Optional<ComponentChanges> componentize(ItemStack stack, NbtCompound tag) {
-        Optional<RegistryWrapper.WrapperLookup> lookup = DatapackRegistries.lookup();
+    private static Optional<DataComponentPatch> componentize(ItemStack stack, CompoundTag tag) {
+        Optional<HolderLookup.Provider> lookup = DatapackRegistries.lookup();
         if (lookup.isEmpty()) {
             VillagerTradingPlus.LOGGER.error(
                     "Cannot convert the \"nbt\" of a trade item: no datapack registries are loaded. "
@@ -256,26 +255,26 @@ public final class ItemStackSerializer {
             return Optional.empty();
         }
 
-        NbtCompound old = new NbtCompound();
-        old.putString("id", Registries.ITEM.getId(stack.getItem()).toString());
+        CompoundTag old = new CompoundTag();
+        old.putString("id", BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
         // The count is carried by the stack, not by this patch - a fixed 1 keeps it inside the range
         // ItemStack.CODEC accepts no matter how large the trade's own count is.
         old.putInt("Count", 1);
         old.put("tag", tag);
 
-        Dynamic<NbtElement> fixed = Schemas.getFixer().update(
-                TypeReferences.ITEM_STACK,
+        Dynamic<Tag> fixed = DataFixers.getDataFixer().update(
+                References.ITEM_STACK,
                 new Dynamic<>(NbtOps.INSTANCE, old),
                 RAW_NBT_DATA_VERSION,
-                SharedConstants.getGameVersion().dataVersion().id());
+                SharedConstants.getCurrentVersion().dataVersion().version());
 
         // Components can reference dynamic registries (an enchantment, a potion), so plain NbtOps is
         // not enough to read the fixed stack back.
-        RegistryOps<NbtElement> ops = RegistryOps.of(NbtOps.INSTANCE, lookup.get());
+        RegistryOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, lookup.get());
         return ItemStack.CODEC.parse(ops, fixed.getValue())
                 .resultOrPartial(error -> VillagerTradingPlus.LOGGER.error(
                         "Could not read the converted \"nbt\" of a trade item: {}", error))
-                .map(ItemStack::getComponentChanges);
+                .map(ItemStack::getComponentsPatch);
     }
 
     /**
@@ -284,27 +283,27 @@ public final class ItemStackSerializer {
      * A bare string that is not JSON is treated as literal text; strict component parsing is only
      * attempted when the string looks like JSON, and any parse failure falls back to a literal.
      */
-    private static Text parseText(JsonElement element) {
+    private static Component parseText(JsonElement element) {
         if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
             String raw = element.getAsString();
             String trimmed = raw.trim();
             if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-                Text parsed = decodeText(com.google.gson.JsonParser.parseString(raw));
+                Component parsed = decodeText(com.google.gson.JsonParser.parseString(raw));
                 if (parsed != null) {
                     return parsed;
                 }
             }
-            return Text.literal(raw);
+            return Component.literal(raw);
         }
 
-        Text parsed = decodeText(element);
-        return parsed != null ? parsed : Text.empty();
+        Component parsed = decodeText(element);
+        return parsed != null ? parsed : Component.empty();
     }
 
     /** Text.Serializer is gone; component text goes through its codec now. */
-    private static Text decodeText(JsonElement element) {
+    private static Component decodeText(JsonElement element) {
         try {
-            return TextCodecs.CODEC.parse(JsonOps.INSTANCE, element).result().orElse(null);
+            return ComponentSerialization.CODEC.parse(JsonOps.INSTANCE, element).result().orElse(null);
         } catch (Exception ignored) {
             return null;
         }

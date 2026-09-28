@@ -4,9 +4,8 @@ import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.server.network.ServerPlayerEntity;
-
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.function.Consumer;
 
 public final class NetworkHelperImpl {
@@ -23,7 +22,7 @@ public final class NetworkHelperImpl {
         PayloadTypeRegistry.playS2C().register(TradeCatalogPayload.ID, TradeCatalogPayload.CODEC);
     }
 
-    public static void sendToPlayer(ServerPlayerEntity player, CustomPayload payload) {
+    public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
         ServerPlayNetworking.send(player, payload);
     }
 

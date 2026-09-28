@@ -2,7 +2,7 @@ package com.lion.villagertradingplus.client;
 
 import com.lion.villagertradingplus.platform.NetworkHelper;
 import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPacket;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,12 +34,12 @@ public final class TradeCatalogClientState {
         NetworkHelper.registerCatalogReceiver(slice -> {
             // The registries are the client world's: reading a catalogue means reading item stacks,
             // which resolve components against them.
-            if (MinecraftClient.getInstance().world == null) {
+            if (Minecraft.getInstance().level == null) {
                 return;
             }
 
             TradeCatalogPacket.Payload payload =
-                    REASSEMBLER.accept(slice, MinecraftClient.getInstance().world.getRegistryManager());
+                    REASSEMBLER.accept(slice, Minecraft.getInstance().level.registryAccess());
 
             // Nothing to show until the last slice lands; the panel keeps its placeholder until then.
             if (payload != null) {

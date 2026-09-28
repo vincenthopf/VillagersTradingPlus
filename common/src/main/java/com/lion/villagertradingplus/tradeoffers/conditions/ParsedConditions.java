@@ -1,11 +1,10 @@
 package com.lion.villagertradingplus.tradeoffers.conditions;
 
 import com.lion.villagertradingplus.tradeoffers.catalog.ConditionInfo;
-import net.minecraft.entity.Entity;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
 
 /**
  * The parsed {@code "conditions"} block: the combined predicate plus, alongside it, a readable
@@ -18,7 +17,7 @@ import java.util.List;
  */
 public record ParsedConditions(List<Entry> entries, boolean orLogic) implements TradeCondition {
 
-    public record Entry(Text description, TradeCondition condition) {
+    public record Entry(Component description, TradeCondition condition) {
     }
 
     @Override

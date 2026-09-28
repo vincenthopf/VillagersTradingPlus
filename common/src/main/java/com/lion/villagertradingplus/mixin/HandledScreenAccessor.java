@@ -1,6 +1,6 @@
 package com.lion.villagertradingplus.mixin;
 
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -14,9 +14,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
  * {@code MerchantScreen} does not override (so it cannot be injected into from a MerchantScreen
  * mixin) and whose flag is private (so it cannot be shadowed from one either).
  */
-@Mixin(HandledScreen.class)
+@Mixin(AbstractContainerScreen.class)
 public interface HandledScreenAccessor {
 
-    @Accessor("cancelNextRelease")
+    @Accessor("skipNextRelease")
     void villagertradingplus$setCancelNextRelease(boolean cancelNextRelease);
 }

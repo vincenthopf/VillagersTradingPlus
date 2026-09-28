@@ -1,6 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.conditions;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 /**
  * A predicate evaluated when a villager's trade offers are generated (on level-up). The villager

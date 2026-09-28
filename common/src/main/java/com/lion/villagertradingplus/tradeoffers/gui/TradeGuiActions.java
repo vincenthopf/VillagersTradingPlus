@@ -8,12 +8,12 @@ import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpansion;
 import com.lion.villagertradingplus.tradeoffers.WanderingTraderTradeLoader;
 import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPacket;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import net.minecraft.entity.passive.MerchantEntity;
-import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.screen.MerchantScreenHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.village.TradeOffers;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.inventory.MerchantMenu;
 
 /**
  * Server-side handling for the trade-screen control buttons. Actions are addressed by the button id
@@ -35,7 +35,7 @@ public final class TradeGuiActions {
     }
 
     /** Returns true if the button id was one of ours and was handled. */
-    public static boolean handle(ServerPlayerEntity player, MerchantEntity merchant, int id) {
+    public static boolean handle(ServerPlayer player, AbstractVillager merchant, int id) {
         VTPConfig cfg = VillagerTradingPlus.CONFIG;
 
         if (id >= 100 && id < 110) {
@@ -77,29 +77,29 @@ public final class TradeGuiActions {
     }
 
     /** Re-sends the merchant's offers to the currently open trade screen so the client updates. */
-    private static void refresh(ServerPlayerEntity player, MerchantEntity merchant) {
-        if (player.currentScreenHandler instanceof MerchantScreenHandler handler) {
-            int level = merchant instanceof VillagerEntity villager ? villager.getVillagerData().level() : 1;
-            player.sendTradeOffers(handler.syncId, merchant.getOffers(), level, merchant.getExperience(),
-                    merchant.isLeveledMerchant(), merchant.canRefreshTrades());
+    private static void refresh(ServerPlayer player, AbstractVillager merchant) {
+        if (player.containerMenu instanceof MerchantMenu handler) {
+            int level = merchant instanceof Villager villager ? villager.getVillagerData().level() : 1;
+            player.sendMerchantOffers(handler.containerId, merchant.getOffers(), level, merchant.getVillagerXp(),
+                    merchant.showProgressBar(), merchant.canRestock());
         }
     }
 
     /** Builds the requested tier and ships it to the panel docked beside the player's trade screen. */
-    private static void sendCatalog(ServerPlayerEntity player, MerchantEntity merchant, int requestedLevel) {
+    private static void sendCatalog(ServerPlayer player, AbstractVillager merchant, int requestedLevel) {
         int maxLevel = maxLevel(merchant);
-        int level = MathHelper.clamp(requestedLevel, 1, maxLevel);
+        int level = Mth.clamp(requestedLevel, 1, maxLevel);
 
         CatalogBuilder builder = buildCatalog(merchant, level);
         // One catalogue goes out as several packets; they arrive in order and the client reassembles.
-        TradeCatalogPacket.write(player.getServer().getRegistryManager(), level, maxLevel,
+        TradeCatalogPacket.write(player.getServer().registryAccess(), level, maxLevel,
                         builder.entries(), builder.skipped())
                 .forEach(slice -> NetworkHelper.sendToPlayer(player, slice));
     }
 
     /** Villagers have five tiers; the wandering trader has two pools (common, rare). */
-    public static int maxLevel(MerchantEntity merchant) {
-        return merchant instanceof VillagerEntity ? 5 : 2;
+    public static int maxLevel(AbstractVillager merchant) {
+        return merchant instanceof Villager ? 5 : 2;
     }
 
     /**
@@ -112,8 +112,8 @@ public final class TradeGuiActions {
      * simply vanished whenever its condition happened to be false. {@link CatalogExpansion} walks
      * the factories instead, so the same tier always produces the same rows.
      */
-    public static CatalogBuilder buildCatalog(MerchantEntity merchant, int level) {
-        TradeOffers.Factory[] pool = poolFor(merchant, level);
+    public static CatalogBuilder buildCatalog(AbstractVillager merchant, int level) {
+        VillagerTrades.ItemListing[] pool = poolFor(merchant, level);
         int poolSize = pool == null ? 0 : pool.length;
 
         CatalogBuilder builder = new CatalogBuilder(poolSize, picksPerLevel(merchant, level));
@@ -121,25 +121,25 @@ public final class TradeGuiActions {
             return builder;
         }
 
-        for (TradeOffers.Factory factory : pool) {
+        for (VillagerTrades.ItemListing factory : pool) {
             CatalogExpansion.expandTrade(factory, merchant, builder);
         }
         return builder;
     }
 
-    private static int picksPerLevel(MerchantEntity merchant, int level) {
-        if (merchant instanceof VillagerEntity) {
+    private static int picksPerLevel(AbstractVillager merchant, int level) {
+        if (merchant instanceof Villager) {
             return VillagerTradingPlus.CONFIG.trade_offers_per_level;
         }
         // Wandering trader: the common pool contributes several offers, the rare pool exactly one.
         return level == 1 ? VillagerTradingPlus.CONFIG.trade_offers_wandering_trader : 1;
     }
 
-    private static TradeOffers.Factory[] poolFor(MerchantEntity merchant, int level) {
-        if (merchant instanceof VillagerEntity villager) {
-            Int2ObjectMap<TradeOffers.Factory[]> map =
-                    villager.getVillagerData().profession().getKey()
-                            .map(TradeOffers.PROFESSION_TO_LEVELED_TRADE::get).orElse(null);
+    private static VillagerTrades.ItemListing[] poolFor(AbstractVillager merchant, int level) {
+        if (merchant instanceof Villager villager) {
+            Int2ObjectMap<VillagerTrades.ItemListing[]> map =
+                    villager.getVillagerData().profession().unwrapKey()
+                            .map(VillagerTrades.TRADES::get).orElse(null);
             return map == null ? null : map.get(level);
         }
         // Wandering trader: level 1 = common, level 2 = rare.

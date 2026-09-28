@@ -6,7 +6,7 @@ import com.lion.villagertradingplus.platform.fabric.TradeOfferResourceListener;
 import com.lion.villagertradingplus.platform.fabric.WanderingTraderTradeOfferResourceListener;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.minecraft.resource.ResourceType;
+import net.minecraft.server.packs.PackType;
 
 public class VillagerTradingPlusFabric implements ModInitializer {
 
@@ -14,8 +14,8 @@ public class VillagerTradingPlusFabric implements ModInitializer {
 	public void onInitialize() {
 		VillagerTradingPlus.init();
 
-		ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new DefaultTradeOfferResourceListener());
-		ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new TradeOfferResourceListener());
-		ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new WanderingTraderTradeOfferResourceListener());
+		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new DefaultTradeOfferResourceListener());
+		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TradeOfferResourceListener());
+		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new WanderingTraderTradeOfferResourceListener());
 	}
 }

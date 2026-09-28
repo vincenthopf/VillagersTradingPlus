@@ -1,6 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.catalog;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 /**
  * Implemented by trade factories that can enumerate every offer they are able to produce, so the

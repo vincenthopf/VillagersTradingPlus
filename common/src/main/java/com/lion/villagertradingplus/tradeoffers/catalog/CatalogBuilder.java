@@ -1,16 +1,15 @@
 package com.lion.villagertradingplus.tradeoffers.catalog;
 
 import com.lion.villagertradingplus.tradeoffers.PricingTradeFactory;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.trading.MerchantOffer;
 
 /**
  * Accumulates catalogue rows while {@link CatalogExpansion} walks a tier's factory pool.
@@ -162,8 +161,8 @@ public final class CatalogBuilder {
             return;
         }
 
-        int minPrice = scale(rawMinPrice, firstBuy.getMaxCount());
-        int maxPrice = scale(rawMaxPrice, firstBuy.getMaxCount());
+        int minPrice = scale(rawMinPrice, firstBuy.getMaxStackSize());
+        int maxPrice = scale(rawMaxPrice, firstBuy.getMaxStackSize());
 
         ItemStack shownFirstBuy = firstBuy.copy();
         shownFirstBuy.setCount(minPrice);
@@ -179,23 +178,23 @@ public final class CatalogBuilder {
     }
 
     /** Adds a row straight from a generated offer, reading its economics back off the offer. */
-    public void addOffer(TradeOffer offer) {
-        int price = offer.getOriginalFirstBuyItem().getCount();
+    public void addOffer(MerchantOffer offer) {
+        int price = offer.getBaseCostA().getCount();
         addOffer(offer, price, price);
     }
 
-    public void addOffer(TradeOffer offer, int rawMinPrice, int rawMaxPrice) {
-        add(offer.getOriginalFirstBuyItem(), offer.getDisplayedSecondBuyItem(), offer.getSellItem(),
-                offer.getMaxUses(), offer.getMerchantExperience(), offer.getPriceMultiplier(),
-                offer.getDemandBonus(), rawMinPrice, rawMaxPrice);
+    public void addOffer(MerchantOffer offer, int rawMinPrice, int rawMaxPrice) {
+        add(offer.getBaseCostA(), offer.getCostB(), offer.getResult(),
+                offer.getMaxUses(), offer.getXp(), offer.getPriceMultiplier(),
+                offer.getDemand(), rawMinPrice, rawMaxPrice);
     }
 
     /**
      * Fallback for factories that cannot enumerate themselves: rolls the factory once with a fixed
      * seed, so the row is stable across openings even when {@code create} is random.
      */
-    public void addSampled(TradeOffers.Factory factory, Entity merchant) {
-        TradeOffer offer = factory.create(merchant, Random.create(CATALOG_SEED));
+    public void addSampled(VillagerTrades.ItemListing factory, Entity merchant) {
+        MerchantOffer offer = factory.getOffer(merchant, RandomSource.create(CATALOG_SEED));
         if (offer != null) {
             addOffer(offer);
         }

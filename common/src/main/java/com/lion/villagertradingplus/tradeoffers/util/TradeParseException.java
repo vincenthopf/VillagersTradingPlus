@@ -6,7 +6,7 @@ package com.lion.villagertradingplus.tradeoffers.util;
  *
  * <p>Caught at the single choke point {@code TradeOfferManager.deserializeTrade}, which logs the reason
  * and skips just that trade. Failing here is deliberate: silently substituting {@link
- * net.minecraft.item.ItemStack#EMPTY} used to leave a blank slot in a villager's trade list with no
+ * net.minecraft.world.item.ItemStack#EMPTY} used to leave a blank slot in a villager's trade list with no
  * indication of what went wrong.
  */
 public class TradeParseException extends RuntimeException {

@@ -2,12 +2,12 @@ package com.lion.villagertradingplus.tradeoffers.catalog;
 
 import com.lion.villagertradingplus.VillagerTradingPlus;
 import io.netty.buffer.Unpooled;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.registry.DynamicRegistryManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 /**
  * Wire format for the catalogue, sent server-to-client as a sequence of {@link TradeCatalogPayload}
@@ -52,9 +52,9 @@ public final class TradeCatalogPacket {
      * <p>Rows go into a scratch buffer before the header, because the count has to precede them and a
      * varint cannot be back-patched once written.
      */
-    public static List<TradeCatalogPayload> write(DynamicRegistryManager registries, int level, int maxLevel,
+    public static List<TradeCatalogPayload> write(RegistryAccess registries, int level, int maxLevel,
                                                   List<CatalogEntry> entries, int alreadySkipped) {
-        RegistryByteBuf scratch = new RegistryByteBuf(Unpooled.buffer(), registries);
+        RegistryFriendlyByteBuf scratch = new RegistryFriendlyByteBuf(Unpooled.buffer(), registries);
         int written = 0;
         for (CatalogEntry entry : entries) {
             if (scratch.writerIndex() > MAX_TOTAL_BYTES) {
@@ -64,7 +64,7 @@ public final class TradeCatalogPacket {
             written++;
         }
 
-        RegistryByteBuf body = new RegistryByteBuf(Unpooled.buffer(), registries);
+        RegistryFriendlyByteBuf body = new RegistryFriendlyByteBuf(Unpooled.buffer(), registries);
         body.writeVarInt(level);
         body.writeVarInt(maxLevel);
         body.writeVarInt(alreadySkipped + (entries.size() - written));
@@ -114,7 +114,7 @@ public final class TradeCatalogPacket {
          * fails far less legibly.
          */
         @Nullable
-        public Payload accept(TradeCatalogPayload slice, DynamicRegistryManager registries) {
+        public Payload accept(TradeCatalogPayload slice, RegistryAccess registries) {
             if (slice.index() == 0) {
                 reset();
                 this.expected = slice.count();
@@ -146,7 +146,7 @@ public final class TradeCatalogPacket {
             }
             reset();
 
-            RegistryByteBuf buf = new RegistryByteBuf(Unpooled.wrappedBuffer(all), registries);
+            RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.wrappedBuffer(all), registries);
             try {
                 return read(buf);
             } catch (Exception e) {
@@ -162,7 +162,7 @@ public final class TradeCatalogPacket {
         }
     }
 
-    private static Payload read(RegistryByteBuf buf) {
+    private static Payload read(RegistryFriendlyByteBuf buf) {
         int level = buf.readVarInt();
         int maxLevel = buf.readVarInt();
         int omitted = buf.readVarInt();

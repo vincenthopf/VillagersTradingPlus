@@ -1,18 +1,18 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.trading.MerchantOffer;
 import com.google.gson.JsonObject;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
 import org.jetbrains.annotations.NotNull;
 
 public class JsonBuyItemTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public TradeOffers.Factory deserialize(JsonObject json) {
+    public VillagerTrades.ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack buy = getItemStackFromJson(JsonFields.requireObject(json, "buy_item trade", "buy"));
@@ -21,7 +21,7 @@ public class JsonBuyItemTradeOffer extends JsonTradeOffer {
         return new Factory(buy, currency, maxUses, experience, priceMultiplier, demand);
     }
 
-    private static class Factory implements TradeOffers.Factory {
+    private static class Factory implements VillagerTrades.ItemListing {
         private final ItemStack buy;
         private final ItemStack currency;
         private final int maxUses;
@@ -38,8 +38,8 @@ public class JsonBuyItemTradeOffer extends JsonTradeOffer {
             this.demand = demand;
         }
 
-        public TradeOffer create(Entity entity, net.minecraft.util.math.random.Random random) {
-            return new TradeOffer(traded(buy), tradedOrEmpty(net.minecraft.item.ItemStack.EMPTY), currency, 0, this.maxUses, this.experience, this.multiplier, this.demand);
+        public MerchantOffer getOffer(Entity entity, net.minecraft.util.RandomSource random) {
+            return new MerchantOffer(traded(buy), tradedOrEmpty(net.minecraft.world.item.ItemStack.EMPTY), currency, 0, this.maxUses, this.experience, this.multiplier, this.demand);
         }
 
     }

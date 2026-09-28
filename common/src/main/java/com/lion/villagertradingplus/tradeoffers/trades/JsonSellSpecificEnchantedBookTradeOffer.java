@@ -1,17 +1,17 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
 import com.google.gson.JsonObject;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.EnchantmentLevelEntry;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.util.Identifier;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.EnchantmentInstance;
+import net.minecraft.world.item.trading.MerchantOffer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,32 +23,32 @@ public class JsonSellSpecificEnchantedBookTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public TradeOffers.Factory deserialize(JsonObject json) {
+    public VillagerTrades.ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack currency = getItemStackFromJson(json.get("basePriceIn").getAsJsonObject());
 
-        Identifier enchantmentId = Identifier.tryParse(readString(json, "enchantment", "minecraft:unbreaking"));
+        ResourceLocation enchantmentId = ResourceLocation.tryParse(readString(json, "enchantment", "minecraft:unbreaking"));
         // Only the key is resolved here. Enchantments live in a dynamic registry since 1.21, so the
         // entry itself does not exist until a world is loaded - and deserialization has no world.
-        RegistryKey<Enchantment> enchantmentKey = enchantmentId == null
+        ResourceKey<Enchantment> enchantmentKey = enchantmentId == null
                 ? null
-                : RegistryKey.of(RegistryKeys.ENCHANTMENT, enchantmentId);
+                : ResourceKey.create(Registries.ENCHANTMENT, enchantmentId);
         int level = readInt(json, "level", 1);
 
         return new Factory(currency, enchantmentKey, level, maxUses, experience, priceMultiplier);
     }
 
-    private static class Factory implements TradeOffers.Factory {
+    private static class Factory implements VillagerTrades.ItemListing {
         private final ItemStack currency;
         @Nullable
-        private final RegistryKey<Enchantment> enchantmentKey;
+        private final ResourceKey<Enchantment> enchantmentKey;
         private final int level;
         private final int maxUses;
         private final int experience;
         private final float multiplier;
 
-        public Factory(ItemStack currency, @Nullable RegistryKey<Enchantment> enchantmentKey, int level, int maxUses, int experience, float multiplier) {
+        public Factory(ItemStack currency, @Nullable ResourceKey<Enchantment> enchantmentKey, int level, int maxUses, int experience, float multiplier) {
             this.currency = currency;
             this.enchantmentKey = enchantmentKey;
             this.level = level;
@@ -57,21 +57,21 @@ public class JsonSellSpecificEnchantedBookTradeOffer extends JsonTradeOffer {
             this.multiplier = multiplier;
         }
 
-        public TradeOffer create(Entity entity, net.minecraft.util.math.random.Random random) {
+        public MerchantOffer getOffer(Entity entity, net.minecraft.util.RandomSource random) {
             // forEnchantment builds the stack instead of mutating one, so the blank book is the
             // fallback rather than the starting point. An unknown id still just yields that blank
             // book rather than losing the whole trade; a datapack may name an enchantment that this
             // world does not have loaded.
             ItemStack book = this.enchantmentKey == null
                     ? new ItemStack(Items.ENCHANTED_BOOK)
-                    : entity.getWorld().getRegistryManager()
-                            .getOrThrow(RegistryKeys.ENCHANTMENT)
-                            .getOptional(this.enchantmentKey)
-                            .map(enchantment -> EnchantmentHelper.getEnchantedBookWith(
-                                    new EnchantmentLevelEntry(enchantment, this.level)))
+                    : entity.level().registryAccess()
+                            .lookupOrThrow(Registries.ENCHANTMENT)
+                            .get(this.enchantmentKey)
+                            .map(enchantment -> EnchantmentHelper.createBook(
+                                    new EnchantmentInstance(enchantment, this.level)))
                             .orElseGet(() -> new ItemStack(Items.ENCHANTED_BOOK));
 
-            return new TradeOffer(traded(this.currency.copy()), book, this.maxUses, this.experience, this.multiplier);
+            return new MerchantOffer(traded(this.currency.copy()), book, this.maxUses, this.experience, this.multiplier);
         }
     }
 }

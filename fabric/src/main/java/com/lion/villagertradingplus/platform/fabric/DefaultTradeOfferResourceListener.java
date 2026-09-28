@@ -6,28 +6,27 @@ import com.lion.villagertradingplus.tradeoffers.TradeMerger;
 import com.lion.villagertradingplus.tradeoffers.TradeOfferManager;
 import com.lion.villagertradingplus.tradeoffers.TradeOfferRegistryLoader;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
-import net.minecraft.resource.JsonDataLoader;
-import net.minecraft.resource.ResourceFinder;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.dynamic.Codecs;
-import net.minecraft.util.profiler.Profiler;
-
+import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
+import net.minecraft.util.ExtraCodecs;
+import net.minecraft.util.profiling.ProfilerFiller;
 import java.util.Map;
 
-public class DefaultTradeOfferResourceListener extends JsonDataLoader<JsonElement> implements IdentifiableResourceReloadListener {
+public class DefaultTradeOfferResourceListener extends SimpleJsonResourceReloadListener<JsonElement> implements IdentifiableResourceReloadListener {
 
     public DefaultTradeOfferResourceListener() {
-        super(Codecs.JSON_ELEMENT, ResourceFinder.json("default_villager_trades"));
+        super(ExtraCodecs.JSON, FileToIdConverter.json("default_villager_trades"));
     }
 
     @Override
-    public Identifier getFabricId() {
-        return Identifier.of(VillagerTradingPlus.MOD_ID,"default_villager_data_loader");
+    public ResourceLocation getFabricId() {
+        return ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"default_villager_data_loader");
     }
 
     @Override
-    protected void apply(Map<Identifier, JsonElement> loader, ResourceManager manager, Profiler profiler) {
+    protected void apply(Map<ResourceLocation, JsonElement> loader, ResourceManager manager, ProfilerFiller profiler) {
         // First listener of the trade chain, so this is where a reload starts from a clean slate.
         TradeOfferRegistryLoader.begin();
 

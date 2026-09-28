@@ -4,29 +4,29 @@ import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpandable;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.PotionContentsComponent;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.potion.Potion;
-import net.minecraft.potion.Potions;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
-import net.minecraft.village.TradedItem;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.trading.ItemCost;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.level.Level;
 
 public class JsonSellPotionTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public TradeOffers.Factory deserialize(JsonObject json) {
+    public VillagerTrades.ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack sell = getItemStackFromJson(JsonFields.requireObject(json, "sell_potion trade", "sell"));
@@ -36,7 +36,7 @@ public class JsonSellPotionTradeOffer extends JsonTradeOffer {
         return new Factory(buy, sell, currency, maxUses, experience, priceMultiplier);
     }
 
-    private static class Factory implements TradeOffers.Factory, CatalogExpandable {
+    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
         private final ItemStack buy;
         private final ItemStack sell;
         private final ItemStack currency;
@@ -53,24 +53,24 @@ public class JsonSellPotionTradeOffer extends JsonTradeOffer {
             this.multiplier = multiplier;
         }
 
-        public TradeOffer create(Entity entity, net.minecraft.util.math.random.Random random) {
-            List<RegistryEntry<Potion>> list = brewable(entity.getWorld());
+        public MerchantOffer getOffer(Entity entity, net.minecraft.util.RandomSource random) {
+            List<Holder<Potion>> list = brewable(entity.level());
             if (list.isEmpty()) {
                 return null;
             }
 
-            RegistryEntry<Potion> potion = list.get(random.nextInt(list.size()));
+            Holder<Potion> potion = list.get(random.nextInt(list.size()));
 
-            return new TradeOffer(waterBottle(), Optional.of(tradedCurrency()), sellStack(potion),
+            return new MerchantOffer(waterBottle(), Optional.of(tradedCurrency()), sellStack(potion),
                     this.maxUses, this.experience, this.multiplier);
         }
 
         /** The potion pool is a fixed registry scan, so every brewable result gets its own row. */
         @Override
         public void expandCatalog(Entity merchant, CatalogBuilder out) {
-            List<RegistryEntry<Potion>> brewable = brewable(merchant.getWorld());
+            List<Holder<Potion>> brewable = brewable(merchant.level());
             out.pushShare(brewable.isEmpty() ? 1.0f : 1.0f / brewable.size());
-            for (RegistryEntry<Potion> potion : brewable) {
+            for (Holder<Potion> potion : brewable) {
                 if (out.isFull()) {
                     out.countSkipped(1);
                     continue;
@@ -85,31 +85,31 @@ public class JsonSellPotionTradeOffer extends JsonTradeOffer {
          * Brewability moved off the registry and onto the world in 1.21: recipes are data-driven now,
          * so the answer depends on the loaded datapacks rather than on the potion alone.
          */
-        private static List<RegistryEntry<Potion>> brewable(World world) {
-            return Registries.POTION.streamEntries()
+        private static List<Holder<Potion>> brewable(Level world) {
+            return BuiltInRegistries.POTION.listElements()
                     .filter(entry -> !entry.value().getEffects().isEmpty()
-                            && world.getBrewingRecipeRegistry().isBrewable(entry))
+                            && world.potionBrewing().isBrewablePotion(entry))
                     .collect(Collectors.toList());
         }
 
         /**
-         * What the player hands in. As a {@link TradedItem} this is a match rule rather than a stack,
+         * What the player hands in. As a {@link ItemCost} this is a match rule rather than a stack,
          * so the water potion has to be spelled out as a component predicate - the same way vanilla
          * builds its own potion trades.
          */
-        private TradedItem waterBottle() {
-            return new TradedItem(this.buy.getItem(), this.buy.getCount())
-                    .withComponents(builder -> builder.add(DataComponentTypes.POTION_CONTENTS,
-                            new PotionContentsComponent(Potions.WATER)));
+        private ItemCost waterBottle() {
+            return new ItemCost(this.buy.getItem(), this.buy.getCount())
+                    .withComponents(builder -> builder.expect(DataComponents.POTION_CONTENTS,
+                            new PotionContents(Potions.WATER)));
         }
 
-        private TradedItem tradedCurrency() {
-            return new TradedItem(this.currency.getItem(), this.currency.getCount());
+        private ItemCost tradedCurrency() {
+            return new ItemCost(this.currency.getItem(), this.currency.getCount());
         }
 
-        private ItemStack sellStack(RegistryEntry<Potion> potion) {
+        private ItemStack sellStack(Holder<Potion> potion) {
             ItemStack stack = new ItemStack(this.sell.getItem(), 1);
-            stack.set(DataComponentTypes.POTION_CONTENTS, new PotionContentsComponent(potion));
+            stack.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));
             return stack;
         }
     }

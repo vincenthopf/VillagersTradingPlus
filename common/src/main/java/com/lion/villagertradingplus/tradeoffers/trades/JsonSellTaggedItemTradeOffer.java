@@ -5,14 +5,14 @@ import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpandable;
 import com.lion.villagertradingplus.tradeoffers.util.Ingredient;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.trading.MerchantOffer;
 
 /**
  * Sells any single member of an item tag (resolved to one concrete item per generated offer) for a
@@ -28,14 +28,14 @@ public class JsonSellTaggedItemTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public TradeOffers.Factory deserialize(JsonObject json) {
+    public VillagerTrades.ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
         Ingredient sell = Ingredient.fromJson(JsonFields.requireObject(json, "sell_tagged_item trade", "sell"));
         ItemStack currency = getItemStackFromJson(json.get("priceIn").getAsJsonObject());
         return new Factory(sell, currency, maxUses, experience, priceMultiplier, demand);
     }
 
-    private static class Factory implements TradeOffers.Factory, CatalogExpandable {
+    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
         private final Ingredient sell;
         private final ItemStack currency;
         private final int maxUses;
@@ -53,12 +53,12 @@ public class JsonSellTaggedItemTradeOffer extends JsonTradeOffer {
         }
 
         @Override
-        public TradeOffer create(Entity entity, Random random) {
+        public MerchantOffer getOffer(Entity entity, RandomSource random) {
             ItemStack resolved = sell.resolve(random);
             if (resolved.isEmpty()) {
                 return null;
             }
-            return new TradeOffer(traded(currency.copy()), tradedOrEmpty(ItemStack.EMPTY), resolved, 0, maxUses, experience, multiplier, demand);
+            return new MerchantOffer(traded(currency.copy()), tradedOrEmpty(ItemStack.EMPTY), resolved, 0, maxUses, experience, multiplier, demand);
         }
 
         /** A tag input is one random member per generated offer, so the catalogue lists them all. */

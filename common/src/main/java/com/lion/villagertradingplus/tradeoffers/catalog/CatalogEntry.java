@@ -1,14 +1,13 @@
 package com.lion.villagertradingplus.tradeoffers.catalog;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.RegistryByteBuf;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * One row of the trade catalogue: the three display stacks plus every piece of metadata the JSON
- * defined but vanilla {@link net.minecraft.village.TradeOffer} throws away.
+ * defined but vanilla {@link net.minecraft.world.item.trading.MerchantOffer} throws away.
  *
  * <p>Built server-side by {@link CatalogBuilder} and shipped to the client whole, because none of
  * this survives a {@code TradeOffer} round-trip.
@@ -54,10 +53,10 @@ public record CatalogEntry(
 
     // OPTIONAL_PACKET_CODEC rather than the plain one: the second buy slot is empty on most trades,
     // and only the optional codec accepts an empty stack.
-    public void write(RegistryByteBuf buf) {
-        ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, this.firstBuy);
-        ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, this.secondBuy);
-        ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, this.sell);
+    public void write(RegistryFriendlyByteBuf buf) {
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, this.firstBuy);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, this.secondBuy);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, this.sell);
         buf.writeVarInt(this.poolWeight);
         buf.writeVarInt(this.poolTotalWeight);
         buf.writeFloat(this.poolShare);
@@ -76,10 +75,10 @@ public record CatalogEntry(
         buf.writeBoolean(this.conditionsMet);
     }
 
-    public static CatalogEntry read(RegistryByteBuf buf) {
-        ItemStack firstBuy = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
-        ItemStack secondBuy = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
-        ItemStack sell = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
+    public static CatalogEntry read(RegistryFriendlyByteBuf buf) {
+        ItemStack firstBuy = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack secondBuy = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack sell = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
         int poolWeight = buf.readVarInt();
         int poolTotalWeight = buf.readVarInt();
         float poolShare = buf.readFloat();

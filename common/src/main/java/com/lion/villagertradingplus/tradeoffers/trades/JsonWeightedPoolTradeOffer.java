@@ -8,14 +8,14 @@ import com.lion.villagertradingplus.tradeoffers.TradeOfferManager;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpandable;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogExpansion;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.trading.MerchantOffer;
 
 /**
  * A rarity wrapper: picks one of N sub-trades by weight at create() time. Each sub-trade is a full
@@ -34,13 +34,13 @@ public class JsonWeightedPoolTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public TradeOffers.Factory deserialize(JsonObject json) {
+    public VillagerTrades.ItemListing deserialize(JsonObject json) {
         List<Entry> entries = new ArrayList<>();
         int totalWeight = 0;
         for (JsonElement element : JsonFields.requireArray(json, "weighted_pool trade", "pool")) {
             JsonObject entry = element.getAsJsonObject();
             int weight = readInt(entry, "weight", 1);
-            TradeOffers.Factory factory = TradeOfferManager.deserializeTrade(entry.getAsJsonObject("trade"));
+            VillagerTrades.ItemListing factory = TradeOfferManager.deserializeTrade(entry.getAsJsonObject("trade"));
 
             // deserializeTrade wraps everything it returns in a PricingTradeFactory, and this pool is
             // itself about to be wrapped by whoever called us. Left alone, the global cost scale would
@@ -60,10 +60,10 @@ public class JsonWeightedPoolTradeOffer extends JsonTradeOffer {
         return new Factory(entries, totalWeight);
     }
 
-    private record Entry(int weight, TradeOffers.Factory factory) {
+    private record Entry(int weight, VillagerTrades.ItemListing factory) {
     }
 
-    private static class Factory implements TradeOffers.Factory, CatalogExpandable {
+    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
         private final List<Entry> entries;
         private final int totalWeight;
 
@@ -86,7 +86,7 @@ public class JsonWeightedPoolTradeOffer extends JsonTradeOffer {
         }
 
         @Override
-        public TradeOffer create(Entity entity, Random random) {
+        public MerchantOffer getOffer(Entity entity, RandomSource random) {
             if (entries.isEmpty() || totalWeight <= 0) {
                 return null;
             }
@@ -94,7 +94,7 @@ public class JsonWeightedPoolTradeOffer extends JsonTradeOffer {
             for (Entry entry : entries) {
                 roll -= entry.weight();
                 if (roll < 0) {
-                    return entry.factory().create(entity, random);
+                    return entry.factory().getOffer(entity, random);
                 }
             }
             return null;

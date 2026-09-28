@@ -1,32 +1,32 @@
 package com.lion.villagertradingplus.tradeoffers;
 
 import com.lion.villagertradingplus.tradeoffers.conditions.TradeCondition;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOffers;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.trading.MerchantOffer;
 
 /**
  * Wraps another trade factory and yields its offer only when the condition passes. Returning
  * {@code null} plugs directly into vanilla's existing null-filtering during offer selection, so a
  * failed condition simply means the trade is not offered by that villager.
  */
-public final class ConditionalTradeFactory implements TradeOffers.Factory {
+public final class ConditionalTradeFactory implements VillagerTrades.ItemListing {
 
-    private final TradeOffers.Factory delegate;
+    private final VillagerTrades.ItemListing delegate;
     private final TradeCondition condition;
 
-    public ConditionalTradeFactory(TradeOffers.Factory delegate, TradeCondition condition) {
+    public ConditionalTradeFactory(VillagerTrades.ItemListing delegate, TradeCondition condition) {
         this.delegate = delegate;
         this.condition = condition;
     }
 
     @Override
-    public TradeOffer create(Entity entity, Random random) {
+    public MerchantOffer getOffer(Entity entity, RandomSource random) {
         if (!condition.test(entity)) {
             return null;
         }
-        return delegate.create(entity, random);
+        return delegate.getOffer(entity, random);
     }
 
     /**
@@ -34,7 +34,7 @@ public final class ConditionalTradeFactory implements TradeOffers.Factory {
      * trades whatever their condition currently says, and marks them, rather than showing a list
      * that silently shrinks when it starts raining.
      */
-    public TradeOffers.Factory delegate() {
+    public VillagerTrades.ItemListing delegate() {
         return this.delegate;
     }
 
