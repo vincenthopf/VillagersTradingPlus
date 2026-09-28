@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
@@ -10,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffer;
 
@@ -28,14 +28,14 @@ public class JsonSellTaggedItemTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public VillagerTrades.ItemListing deserialize(JsonObject json) {
+    public ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
         Ingredient sell = Ingredient.fromJson(JsonFields.requireObject(json, "sell_tagged_item trade", "sell"));
         ItemStack currency = getItemStackFromJson(json.get("priceIn").getAsJsonObject());
         return new Factory(sell, currency, maxUses, experience, priceMultiplier, demand);
     }
 
-    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
+    private static class Factory implements ItemListing, CatalogExpandable {
         private final Ingredient sell;
         private final ItemStack currency;
         private final int maxUses;

@@ -3,10 +3,10 @@ package com.lion.villagertradingplus.mixin;
 import com.lion.villagertradingplus.tradeoffers.util.DatapackRegistries;
 import java.util.List;
 import net.minecraft.commands.Commands;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.LayeredRegistryAccess;
+import net.minecraft.core.component.DataComponentInitializers;
 import net.minecraft.core.Registry;
-import net.minecraft.server.RegistryLayer;
+import net.minecraft.server.ReloadableServerRegistries;
+import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.world.flag.FeatureFlagSet;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,13 +35,13 @@ public class DataPackContentsMixin {
      */
     @Inject(method = "<init>", at = @At("RETURN"))
     private void villagertradingplus$captureDatapackRegistries(
-            LayeredRegistryAccess<RegistryLayer> dynamicRegistries,
-            HolderLookup.Provider registries,
+            ReloadableServerRegistries.LoadResult loadingContext,
             FeatureFlagSet enabledFeatures,
-            Commands.CommandSelection environment,
-            List<Registry.PendingTags<?>> pendingTagLoads,
-            int functionPermissionLevel,
+            Commands.CommandSelection commandSelection,
+            List<Registry.PendingTags<?>> postponedTags,
+            PermissionSet functionCompilationPermissions,
+            List<DataComponentInitializers.PendingComponents<?>> newComponents,
             CallbackInfo ci) {
-        DatapackRegistries.set(dynamicRegistries.compositeAccess());
+        DatapackRegistries.set(loadingContext.layers().compositeAccess());
     }
 }

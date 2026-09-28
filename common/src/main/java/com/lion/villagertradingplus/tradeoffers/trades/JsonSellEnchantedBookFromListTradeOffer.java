@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -16,12 +17,11 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -49,7 +49,7 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public VillagerTrades.ItemListing deserialize(JsonObject json) {
+    public ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack currency = getItemStackFromJsonWithoutCount(JsonFields.requireObject(json, "sell_enchanted_book_from_list trade", "currency"));
@@ -62,7 +62,7 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
         for (JsonElement element : JsonFields.requireArray(json, "sell_enchanted_book_from_list trade", "enchantments")) {
             JsonObject obj = element.getAsJsonObject();
             String id = obj.get("id").getAsString();
-            ResourceLocation identifier = ResourceLocation.tryParse(id);
+            Identifier identifier = Identifier.tryParse(id);
 
             Optional<Holder.Reference<Enchantment>> enchantment = identifier == null
                     ? Optional.empty()
@@ -101,7 +101,7 @@ public class JsonSellEnchantedBookFromListTradeOffer extends JsonTradeOffer {
     private record Resolved(Entry entry, Holder<Enchantment> enchantment) {
     }
 
-    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
+    private static class Factory implements ItemListing, CatalogExpandable {
         private final ItemStack currency;
         private final List<Entry> entries;
         private final int baseCost;

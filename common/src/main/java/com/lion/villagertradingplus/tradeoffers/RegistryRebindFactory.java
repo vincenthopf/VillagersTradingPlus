@@ -10,7 +10,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -33,20 +32,20 @@ import net.minecraft.world.item.trading.MerchantOffer;
  * stack, and there is no lossless way to rebuild one, so a buy-side enchantment written in JSON is
  * still bound at parse time.
  */
-public final class RegistryRebindFactory implements VillagerTrades.ItemListing {
+public final class RegistryRebindFactory implements ItemListing {
 
-    private final VillagerTrades.ItemListing delegate;
+    private final ItemListing delegate;
 
-    private RegistryRebindFactory(VillagerTrades.ItemListing delegate) {
+    private RegistryRebindFactory(ItemListing delegate) {
         this.delegate = delegate;
     }
 
-    public static VillagerTrades.ItemListing wrap(VillagerTrades.ItemListing delegate) {
+    public static ItemListing wrap(ItemListing delegate) {
         return delegate == null ? null : new RegistryRebindFactory(delegate);
     }
 
     /** The wrapped factory, so the catalogue can walk past this wrapper to enumerate it. */
-    public VillagerTrades.ItemListing delegate() {
+    public ItemListing delegate() {
         return this.delegate;
     }
 

@@ -19,7 +19,7 @@ public final class NetworkHelperImpl {
      * the payload as unknown.
      */
     public static void init() {
-        PayloadTypeRegistry.playS2C().register(TradeCatalogPayload.ID, TradeCatalogPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(TradeCatalogPayload.ID, TradeCatalogPayload.CODEC);
     }
 
     public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {

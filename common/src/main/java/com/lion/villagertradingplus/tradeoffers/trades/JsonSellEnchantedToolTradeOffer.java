@@ -1,11 +1,11 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.trading.MerchantOffer;
@@ -18,7 +18,7 @@ public class JsonSellEnchantedToolTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public VillagerTrades.ItemListing deserialize(JsonObject json) {
+    public ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack sell = getItemStackFromJson(JsonFields.requireObject(json, "sell_enchanted_tool trade", "sell"));
@@ -27,7 +27,7 @@ public class JsonSellEnchantedToolTradeOffer extends JsonTradeOffer {
         return new Factory(sell, currency, maxUses, experience, priceMultiplier);
     }
 
-    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
+    private static class Factory implements ItemListing, CatalogExpandable {
         /** Bounds of the {@code 5 + nextInt(15)} enchanting power roll that also sets the price. */
         private static final int MIN_POWER = 5;
         private static final int MAX_POWER = 19;

@@ -11,7 +11,7 @@ import java.util.Optional;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -280,7 +280,7 @@ public final class TradeCatalogPanel {
 
     // --- rendering -----------------------------------------------------------------------------
 
-    public void render(GuiGraphics context, int mouseX, int mouseY) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         if (!this.visible) {
             return;
         }
@@ -299,7 +299,7 @@ public final class TradeCatalogPanel {
         drawPanel(context, mouseX, mouseY);
     }
 
-    private void drawPanel(GuiGraphics context, int mouseX, int mouseY) {
+    private void drawPanel(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         Font font = this.client.font;
         drawFrame(context);
 
@@ -311,7 +311,7 @@ public final class TradeCatalogPanel {
         }
 
         Component title = label("catalog_title", this.level);
-        context.drawString(font, title, this.x + (this.width - font.width(title)) / 2, this.y + 6, TEXT, false);
+        context.text(font, title, this.x + (this.width - font.width(title)) / 2, this.y + 6, TEXT, false);
 
         if (maxLevel() > 1) {
             drawNavButton(context, NAV_LEFT_X, NAV_Y, "<", mouseX, mouseY);
@@ -338,7 +338,7 @@ public final class TradeCatalogPanel {
         drawTooltip(context, entries, mouseX, mouseY);
     }
 
-    private void drawFrame(GuiGraphics context) {
+    private void drawFrame(GuiGraphicsExtractor context) {
         int left = this.x;
         int top = this.y;
         int right = left + this.width;
@@ -351,7 +351,7 @@ public final class TradeCatalogPanel {
         context.fill(right - 1, top, right, bottom, PANEL_SHADOW);
     }
 
-    private void drawRows(GuiGraphics context, List<CatalogEntry> entries, int mouseX, int mouseY) {
+    private void drawRows(GuiGraphicsExtractor context, List<CatalogEntry> entries, int mouseX, int mouseY) {
         Font font = this.client.font;
         this.hoveredRow = -1;
 
@@ -381,24 +381,24 @@ public final class TradeCatalogPanel {
                 drawSlot(context, this.x + this.buy2X, rowY);
                 drawStack(context, entry.secondBuy(), this.x + this.buy2X, rowY);
             }
-            context.drawString(font, Component.literal("->"), this.x + this.arrowX, rowY + 4, TEXT, false);
+            context.text(font, Component.literal("->"), this.x + this.arrowX, rowY + 4, TEXT, false);
             drawSlot(context, this.x + this.sellX, rowY);
             drawStack(context, entry.sell(), this.x + this.sellX, rowY);
 
             if (this.showMarker && !entry.conditions().isEmpty()) {
-                context.drawString(font, Component.literal("!"), this.x + this.markerX, rowY + 5,
+                context.text(font, Component.literal("!"), this.x + this.markerX, rowY + 5,
                         entry.conditionsMet() ? TEXT_DIM : TEXT_GATED, false);
             }
 
             if (this.showChance) {
                 String chance = percent(overallChance(entry));
-                context.drawString(font, Component.literal(chance),
+                context.text(font, Component.literal(chance),
                         this.x + this.width - 8 - font.width(chance), rowY + 5, TEXT_DIM, false);
             }
         }
     }
 
-    private void drawFooter(GuiGraphics context, List<CatalogEntry> entries, int mouseX, int mouseY) {
+    private void drawFooter(GuiGraphicsExtractor context, List<CatalogEntry> entries, int mouseX, int mouseY) {
         int pageCount = Math.max(1, Mth.positiveCeilDiv(entries.size(), ROWS_PER_PAGE));
         int page = this.firstRow / ROWS_PER_PAGE + 1;
 
@@ -423,7 +423,7 @@ public final class TradeCatalogPanel {
         return Component.translatable("gui.villagertradingplus." + key + (this.compact ? "_short" : ""), args);
     }
 
-    private void drawTooltip(GuiGraphics context, List<CatalogEntry> entries, int mouseX, int mouseY) {
+    private void drawTooltip(GuiGraphicsExtractor context, List<CatalogEntry> entries, int mouseX, int mouseY) {
         if (this.hoveredRow < 0 || this.hoveredRow >= entries.size()) {
             return;
         }
@@ -556,7 +556,7 @@ public final class TradeCatalogPanel {
         return payload == null ? 1 : payload.maxLevel();
     }
 
-    private void drawNavButton(GuiGraphics context, int localX, int localY, String label, int mouseX, int mouseY) {
+    private void drawNavButton(GuiGraphicsExtractor context, int localX, int localY, String label, int mouseX, int mouseY) {
         int left = this.x + localX;
         int top = this.y + localY;
         boolean hovered = mouseX >= left && mouseX < left + NAV_SIZE && mouseY >= top && mouseY < top + NAV_SIZE;
@@ -566,26 +566,26 @@ public final class TradeCatalogPanel {
                 hovered ? BUTTON_HOVER : BUTTON_FILL);
 
         Font font = this.client.font;
-        context.drawString(font, label, left + (NAV_SIZE - font.width(label)) / 2, top + 6, BUTTON_LABEL, true);
+        context.text(font, label, left + (NAV_SIZE - font.width(label)) / 2, top + 6, BUTTON_LABEL, true);
     }
 
     /** Draws a vanilla-looking 18x18 slot hole around the 16x16 item area at (x, y). */
-    private void drawSlot(GuiGraphics context, int slotX, int slotY) {
+    private void drawSlot(GuiGraphicsExtractor context, int slotX, int slotY) {
         context.fill(slotX - 1, slotY - 1, slotX + 17, slotY + 17, SLOT_BORDER);
         context.fill(slotX, slotY, slotX + 16, slotY + 16, SLOT_FILL);
     }
 
-    private void drawStack(GuiGraphics context, ItemStack stack, int slotX, int slotY) {
+    private void drawStack(GuiGraphicsExtractor context, ItemStack stack, int slotX, int slotY) {
         if (stack.isEmpty()) {
             return;
         }
-        context.renderFakeItem(stack, slotX, slotY);
-        context.renderItemDecorations(this.client.font, stack, slotX, slotY);
+        context.fakeItem(stack, slotX, slotY);
+        context.itemDecorations(this.client.font, stack, slotX, slotY);
     }
 
-    private void drawCentered(GuiGraphics context, Component text, int localY, int color) {
+    private void drawCentered(GuiGraphicsExtractor context, Component text, int localY, int color) {
         Font font = this.client.font;
-        context.drawString(font, text, this.x + (this.width - font.width(text)) / 2, this.y + localY, color, false);
+        context.text(font, text, this.x + (this.width - font.width(text)) / 2, this.y + localY, color, false);
     }
 
     private static boolean inRect(int px, int py, int rx, int ry, int rw, int rh) {

@@ -1,16 +1,19 @@
 package com.lion.villagertradingplus.mixin;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.lion.villagertradingplus.tradeoffers.gui.TradeControl;
+import com.lion.villagertradingplus.tradeoffers.TradePools;
+import com.lion.villagertradingplus.tradeoffers.VillagerTradeTable;
+import net.minecraft.world.entity.player.Player;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.npc.AbstractVillager;
-import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.entity.npc.VillagerData;
-import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.entity.npc.villager.VillagerData;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
@@ -42,9 +45,27 @@ public abstract class VillagerEntityMixin extends AbstractVillager implements Tr
     /** Per-level offer counts (index = level 1..5), so a single tier can be re-rolled in place. */
     @Unique private int[] villagertradingplus$levelCounts = null;
 
-    @ModifyConstant(method = "updateTrades", constant = @Constant(intValue = 2))
-    private int changeTradeOfferPerLevelCount(int value) {
-        return VillagerTradingPlus.CONFIG.trade_offers_per_level;
+    @Shadow
+    private void updateSpecialPrices(Player player) {
+        throw new AssertionError();
+    }
+
+    @Inject(method = "updateTrades", at = @At("HEAD"), cancellable = true)
+    private void villagertradingplus$updateTrades(ServerLevel level, CallbackInfo ci) {
+        Int2ObjectMap<ItemListing[]> map = villagertradingplus$tradesForProfession();
+        if (map == null || map.isEmpty()) {
+            return;
+        }
+        ItemListing[] pool = map.get(getVillagerData().level());
+        if (pool == null) {
+            return;
+        }
+        TradePools.addOffers(this, getOffers(), pool, VillagerTradingPlus.CONFIG.trade_offers_per_level);
+        Player tradingPlayer = getTradingPlayer();
+        if (tradingPlayer != null) {
+            updateSpecialPrices(tradingPlayer);
+        }
+        ci.cancel();
     }
 
     // Entity NBT went through ReadView/WriteView in 1.21.6: writeCustomDataToNbt/readCustomDataFromNbt
@@ -70,7 +91,7 @@ public abstract class VillagerEntityMixin extends AbstractVillager implements Tr
 
     @Override
     public void villagertradingplus$rerollAll() {
-        Int2ObjectMap<VillagerTrades.ItemListing[]> map = villagertradingplus$tradesForProfession();
+        Int2ObjectMap<ItemListing[]> map = villagertradingplus$tradesForProfession();
 
         MerchantOffers offers = getOffers();
         offers.clear();
@@ -80,12 +101,12 @@ public abstract class VillagerEntityMixin extends AbstractVillager implements Tr
 
         if (map != null) {
             for (int tier = 1; tier <= level; tier++) {
-                VillagerTrades.ItemListing[] pool = map.get(tier);
+                ItemListing[] pool = map.get(tier);
                 if (pool == null) {
                     continue;
                 }
                 int before = offers.size();
-                addOffersFromItemListings(offers, pool, VillagerTradingPlus.CONFIG.trade_offers_per_level);
+                TradePools.addOffers(this, offers, pool, VillagerTradingPlus.CONFIG.trade_offers_per_level);
                 counts[tier] = offers.size() - before;
             }
         }
@@ -109,8 +130,8 @@ public abstract class VillagerEntityMixin extends AbstractVillager implements Tr
             return;
         }
 
-        Int2ObjectMap<VillagerTrades.ItemListing[]> map = villagertradingplus$tradesForProfession();
-        VillagerTrades.ItemListing[] pool = map == null ? null : map.get(targetLevel);
+        Int2ObjectMap<ItemListing[]> map = villagertradingplus$tradesForProfession();
+        ItemListing[] pool = map == null ? null : map.get(targetLevel);
 
         int start = villagertradingplus$sum(counts, 1, targetLevel - 1);
         int oldCount = counts[targetLevel];
@@ -120,7 +141,7 @@ public abstract class VillagerEntityMixin extends AbstractVillager implements Tr
 
         MerchantOffers fresh = new MerchantOffers();
         if (pool != null) {
-            addOffersFromItemListings(fresh, pool, VillagerTradingPlus.CONFIG.trade_offers_per_level);
+            TradePools.addOffers(this, fresh, pool, VillagerTradingPlus.CONFIG.trade_offers_per_level);
         }
         offers.addAll(start, fresh);
         counts[targetLevel] = fresh.size();
@@ -143,9 +164,9 @@ public abstract class VillagerEntityMixin extends AbstractVillager implements Tr
      * has a value but no key. Such a villager simply has no vanilla trade pool, hence the null.
      */
     @Unique
-    private Int2ObjectMap<VillagerTrades.ItemListing[]> villagertradingplus$tradesForProfession() {
+    private Int2ObjectMap<ItemListing[]> villagertradingplus$tradesForProfession() {
         return getVillagerData().profession().unwrapKey()
-                .map(VillagerTrades.TRADES::get)
+                .map(VillagerTradeTable.TRADES::get)
                 .orElse(null);
     }
 

@@ -2,7 +2,7 @@ package com.lion.villagertradingplus.mixin;
 
 import com.lion.villagertradingplus.tradeoffers.gui.TradeGuiActions;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MerchantMenu;

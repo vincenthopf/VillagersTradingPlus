@@ -1,11 +1,11 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.google.gson.JsonObject;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -23,12 +23,12 @@ public class JsonSellSpecificEnchantedBookTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public VillagerTrades.ItemListing deserialize(JsonObject json) {
+    public ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack currency = getItemStackFromJson(json.get("basePriceIn").getAsJsonObject());
 
-        ResourceLocation enchantmentId = ResourceLocation.tryParse(readString(json, "enchantment", "minecraft:unbreaking"));
+        Identifier enchantmentId = Identifier.tryParse(readString(json, "enchantment", "minecraft:unbreaking"));
         // Only the key is resolved here. Enchantments live in a dynamic registry since 1.21, so the
         // entry itself does not exist until a world is loaded - and deserialization has no world.
         ResourceKey<Enchantment> enchantmentKey = enchantmentId == null
@@ -39,7 +39,7 @@ public class JsonSellSpecificEnchantedBookTradeOffer extends JsonTradeOffer {
         return new Factory(currency, enchantmentKey, level, maxUses, experience, priceMultiplier);
     }
 
-    private static class Factory implements VillagerTrades.ItemListing {
+    private static class Factory implements ItemListing {
         private final ItemStack currency;
         @Nullable
         private final ResourceKey<Enchantment> enchantmentKey;

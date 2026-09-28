@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.gui;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.lion.villagertradingplus.config.VTPConfig;
 import com.lion.villagertradingplus.platform.NetworkHelper;
@@ -10,9 +11,8 @@ import com.lion.villagertradingplus.tradeoffers.catalog.TradeCatalogPacket;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.npc.AbstractVillager;
-import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.inventory.MerchantMenu;
 
 /**
@@ -92,7 +92,7 @@ public final class TradeGuiActions {
 
         CatalogBuilder builder = buildCatalog(merchant, level);
         // One catalogue goes out as several packets; they arrive in order and the client reassembles.
-        TradeCatalogPacket.write(player.getServer().registryAccess(), level, maxLevel,
+        TradeCatalogPacket.write(player.level().getServer().registryAccess(), level, maxLevel,
                         builder.entries(), builder.skipped())
                 .forEach(slice -> NetworkHelper.sendToPlayer(player, slice));
     }
@@ -113,7 +113,7 @@ public final class TradeGuiActions {
      * the factories instead, so the same tier always produces the same rows.
      */
     public static CatalogBuilder buildCatalog(AbstractVillager merchant, int level) {
-        VillagerTrades.ItemListing[] pool = poolFor(merchant, level);
+        ItemListing[] pool = poolFor(merchant, level);
         int poolSize = pool == null ? 0 : pool.length;
 
         CatalogBuilder builder = new CatalogBuilder(poolSize, picksPerLevel(merchant, level));
@@ -121,7 +121,7 @@ public final class TradeGuiActions {
             return builder;
         }
 
-        for (VillagerTrades.ItemListing factory : pool) {
+        for (ItemListing factory : pool) {
             CatalogExpansion.expandTrade(factory, merchant, builder);
         }
         return builder;
@@ -135,11 +135,11 @@ public final class TradeGuiActions {
         return level == 1 ? VillagerTradingPlus.CONFIG.trade_offers_wandering_trader : 1;
     }
 
-    private static VillagerTrades.ItemListing[] poolFor(AbstractVillager merchant, int level) {
+    private static ItemListing[] poolFor(AbstractVillager merchant, int level) {
         if (merchant instanceof Villager villager) {
-            Int2ObjectMap<VillagerTrades.ItemListing[]> map =
+            Int2ObjectMap<ItemListing[]> map =
                     villager.getVillagerData().profession().unwrapKey()
-                            .map(VillagerTrades.TRADES::get).orElse(null);
+                            .map(com.lion.villagertradingplus.tradeoffers.VillagerTradeTable.TRADES::get).orElse(null);
             return map == null ? null : map.get(level);
         }
         // Wandering trader: level 1 = common, level 2 = rare.

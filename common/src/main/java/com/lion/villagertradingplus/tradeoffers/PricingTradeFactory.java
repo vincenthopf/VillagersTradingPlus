@@ -5,7 +5,6 @@ import com.lion.villagertradingplus.VillagerTradingPlus;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 
@@ -17,16 +16,16 @@ import net.minecraft.world.item.trading.MerchantOffer;
  * <p>Like conditional trades, the price is fixed when the offer is generated (villager level-up), so
  * time-of-day variance differs between offers rather than changing live.
  */
-public final class PricingTradeFactory implements VillagerTrades.ItemListing {
+public final class PricingTradeFactory implements ItemListing {
 
-    private final VillagerTrades.ItemListing delegate;
+    private final ItemListing delegate;
 
-    private PricingTradeFactory(VillagerTrades.ItemListing delegate) {
+    private PricingTradeFactory(ItemListing delegate) {
         this.delegate = delegate;
     }
 
     /** Wraps only when some pricing tuning is actually active; otherwise returns the delegate as-is. */
-    public static VillagerTrades.ItemListing wrapIfNeeded(VillagerTrades.ItemListing delegate, JsonObject trade) {
+    public static ItemListing wrapIfNeeded(ItemListing delegate, JsonObject trade) {
         boolean costScale = VillagerTradingPlus.CONFIG.trade_cost_scale != 1.0f;
         boolean timeOfDay = VillagerTradingPlus.CONFIG.enable_time_of_day_pricing;
         return (costScale || timeOfDay) ? new PricingTradeFactory(delegate) : delegate;
@@ -59,7 +58,7 @@ public final class PricingTradeFactory implements VillagerTrades.ItemListing {
     }
 
     /** The wrapped factory, so the catalogue can enumerate it and re-apply pricing itself. */
-    public VillagerTrades.ItemListing delegate() {
+    public ItemListing delegate() {
         return this.delegate;
     }
 
@@ -72,7 +71,7 @@ public final class PricingTradeFactory implements VillagerTrades.ItemListing {
         float factor = VillagerTradingPlus.CONFIG.trade_cost_scale;
         if (VillagerTradingPlus.CONFIG.enable_time_of_day_pricing) {
             float variance = VillagerTradingPlus.CONFIG.time_of_day_price_variance;
-            long timeOfDay = entity.level().getDayTime() % 24000L;
+            long timeOfDay = entity.level().getOverworldClockTime() % 24000L;
             double swing = Math.sin(2.0 * Math.PI * (timeOfDay / 24000.0));
             factor *= (float) (1.0 + variance * swing);
         }

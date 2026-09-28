@@ -5,7 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * One slice of a trade catalogue on the wire.
@@ -27,7 +27,7 @@ import net.minecraft.resources.ResourceLocation;
 public record TradeCatalogPayload(int index, int count, byte[] data) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<TradeCatalogPayload> ID =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID, "trade_catalog"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID, "trade_catalog"));
 
     /**
      * Bounded on decode: the length prefix comes off the wire, so an unbounded array codec would let

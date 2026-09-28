@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -7,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
@@ -24,7 +24,7 @@ public class JsonSellStructureMapTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public VillagerTrades.ItemListing deserialize(JsonObject json) {
+    public ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         TagKey<Structure> structure = TagKey.create(Registries.STRUCTURE, readIdentifier(json, "structure_id", ""));
@@ -35,7 +35,7 @@ public class JsonSellStructureMapTradeOffer extends JsonTradeOffer {
         return new Factory(buy, currency, structure, name, maxUses, experience, priceMultiplier);
     }
 
-    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
+    private static class Factory implements ItemListing, CatalogExpandable {
         private final ItemStack currency;
         private final ItemStack buy;
         private final String nameKey;

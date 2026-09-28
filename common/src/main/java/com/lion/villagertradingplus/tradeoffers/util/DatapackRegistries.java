@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceKey;
  * Access to the datapack (dynamic) registries while trade files are being parsed.
  *
  * <p>Enchantments - and everything else a datapack can define - moved into dynamic registries in
- * 1.21: an {@link net.minecraft.resources.ResourceLocation} on its own no longer names one, the registry loaded
+ * 1.21: an {@link net.minecraft.resources.Identifier} on its own no longer names one, the registry loaded
  * for this world has to be asked. Resource reloaders get no registry handed to them, but they do not
  * need one passed either: {@code DataPackContents.reload} runs {@code ReloadableRegistries.reload}
  * first and only builds the reloaders afterwards, so every dynamic registry is fully populated by the
@@ -51,6 +51,10 @@ public final class DatapackRegistries {
      * the same object as {@link #registry} reads - handed out whole for
      * {@link net.minecraft.resources.RegistryOps}.
      */
+    public static Optional<RegistryAccess> access() {
+        return Optional.ofNullable(current.get());
+    }
+
     public static Optional<HolderLookup.Provider> lookup() {
         return Optional.ofNullable(current.get());
     }

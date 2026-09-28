@@ -4,7 +4,8 @@ import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.lion.villagertradingplus.client.TradeCatalogClientState;
 import com.lion.villagertradingplus.client.screen.TradeCatalogPanel;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.MerchantScreen;
@@ -171,16 +172,16 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
      * next frame throws. Clamped here rather than where the offers arrive, so it holds no matter
      * which side shortened the list or in what order the packets landed.
      */
-    @Inject(method = "render", at = @At("HEAD"))
-    private void villagertradingplus$clampSelectedIndex(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    @Inject(method = "extractContents", at = @At("HEAD"))
+    private void villagertradingplus$clampSelectedIndex(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         int size = this.getMenu().getOffers().size();
         if (this.shopItem >= size) {
             this.shopItem = Math.max(0, size - 1);
         }
     }
 
-    @Inject(method = "render", at = @At("TAIL"))
-    private void villagertradingplus$renderCatalog(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    @Inject(method = "extractContents", at = @At("TAIL"))
+    private void villagertradingplus$renderCatalog(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (this.villagertradingplus$catalog == null) {
             return;
         }
@@ -189,10 +190,12 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void villagertradingplus$catalogClick(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+    private void villagertradingplus$catalogClick(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
         if (this.villagertradingplus$catalog == null) {
             return;
         }
+        double mouseX = event.x();
+        double mouseY = event.y();
         villagertradingplus$layoutCatalog();
         if (!this.villagertradingplus$catalog.isOver(mouseX, mouseY)) {
             return;

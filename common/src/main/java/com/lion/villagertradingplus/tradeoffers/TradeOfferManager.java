@@ -17,13 +17,12 @@ import java.util.function.BiConsumer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.npc.VillagerProfession;
-import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.npc.villager.VillagerProfession;
 
 public class TradeOfferManager {
     public static final Map<String, Integer> professionMapping = new HashMap<>();
-    public static final Map<ResourceLocation, JsonTradeOffer> tradeOfferRegistry = new HashMap<>();
+    public static final Map<Identifier, JsonTradeOffer> tradeOfferRegistry = new HashMap<>();
 
     static {
         professionMapping.put("novice", 1);
@@ -35,20 +34,20 @@ public class TradeOfferManager {
 
     public static void registerTradeOffers() {
         VillagerTradingPlus.LOGGER.info("Registered JSON trade offer adapter.");
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_item"), new JsonSellItemTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"buy_item"), new JsonBuyItemTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"process_item"), new JsonProcessItemTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_potion"), new JsonSellPotionTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_enchanted_tool"), new JsonSellEnchantedToolTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_specific_enchanted_tool"), new JsonSellSpecificEnchantedToolTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_enchanted_book"), new JsonSellEnchantedBookTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_specific_enchanted_book"), new JsonSellSpecificEnchantedBookTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_map"), new JsonSellStructureMapTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"weighted_pool"), new JsonWeightedPoolTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"buy_tagged_item"), new JsonBuyTaggedItemTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_tagged_item"), new JsonSellTaggedItemTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_enchanted_book_from_list"), new JsonSellEnchantedBookFromListTradeOffer());
-        tradeOfferRegistry.put(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"multi_input"), new JsonMultiInputTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_item"), new JsonSellItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"buy_item"), new JsonBuyItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"process_item"), new JsonProcessItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_potion"), new JsonSellPotionTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_enchanted_tool"), new JsonSellEnchantedToolTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_specific_enchanted_tool"), new JsonSellSpecificEnchantedToolTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_enchanted_book"), new JsonSellEnchantedBookTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_specific_enchanted_book"), new JsonSellSpecificEnchantedBookTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_map"), new JsonSellStructureMapTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"weighted_pool"), new JsonWeightedPoolTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"buy_tagged_item"), new JsonBuyTaggedItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_tagged_item"), new JsonSellTaggedItemTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"sell_enchanted_book_from_list"), new JsonSellEnchantedBookFromListTradeOffer());
+        tradeOfferRegistry.put(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID,"multi_input"), new JsonMultiInputTradeOffer());
     }
 
     /**
@@ -68,7 +67,7 @@ public class TradeOfferManager {
      */
     @Nullable
     private static JsonTradeOffer findAdapter(String type) {
-        ResourceLocation id = ResourceLocation.tryParse(type);
+        Identifier id = Identifier.tryParse(type);
         if (id == null) {
             return null;
         }
@@ -80,11 +79,11 @@ public class TradeOfferManager {
 
         // A bare "sell_item" parses as minecraft:sell_item, which is never what the author meant.
         if (type.indexOf(':') < 0) {
-            return tradeOfferRegistry.get(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID, id.getPath()));
+            return tradeOfferRegistry.get(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID, id.getPath()));
         }
 
         if (LEGACY_NAMESPACE.equals(id.getNamespace())) {
-            adapter = tradeOfferRegistry.get(ResourceLocation.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID, id.getPath()));
+            adapter = tradeOfferRegistry.get(Identifier.fromNamespaceAndPath(VillagerTradingPlus.MOD_ID, id.getPath()));
             if (adapter != null && REPORTED_LEGACY_TYPES.add(type)) {
                 VillagerTradingPlus.LOGGER.warn(
                         "Trade type '{}' still uses the old namespace; it now lives at '{}:{}'. Still accepted, but please update the file.",
@@ -100,7 +99,7 @@ public class TradeOfferManager {
         // One unusable file costs that file, not the reload. The listener logs which one it is
         // right before calling in, so the pair of lines pins it down.
         try {
-            ResourceLocation professionId = ResourceLocation.tryParse(
+            Identifier professionId = Identifier.tryParse(
                     JsonFields.requireString(jsonRoot, "villager trade file", "profession"));
 
             // The trade table is keyed by RegistryKey since 1.21.6. The registry is still consulted,
@@ -161,7 +160,7 @@ public class TradeOfferManager {
                         continue;
                     }
 
-                    VillagerTrades.ItemListing factory = deserializeTrade(trade);
+                    ItemListing factory = deserializeTrade(trade);
                     if (factory == null) {
                         VillagerTradingPlus.LOGGER.error("Wandering trader trade type broken: " + trade);
                     } else {
@@ -176,7 +175,7 @@ public class TradeOfferManager {
         }
     }
 
-    private static void deserializeTrades(@NotNull JsonObject jsonRoot, BiConsumer<Integer, VillagerTrades.ItemListing> tradeConsumer) {
+    private static void deserializeTrades(@NotNull JsonObject jsonRoot, BiConsumer<Integer, ItemListing> tradeConsumer) {
         JsonObject trades = JsonFields.requireObject(jsonRoot, "villager trade file", "trades");
         for (Map.Entry<String, JsonElement> entry : trades.entrySet()) {
 
@@ -206,7 +205,7 @@ public class TradeOfferManager {
                     continue;
                 }
 
-                VillagerTrades.ItemListing factory = deserializeTrade(trade);
+                ItemListing factory = deserializeTrade(trade);
 
                 // deserializeTrade already logged why; just record which tier lost a trade.
                 if (factory == null) {
@@ -225,7 +224,7 @@ public class TradeOfferManager {
      * without editing individual adapters. Returns {@code null} when the trade type is unknown.
      */
     @Nullable
-    public static VillagerTrades.ItemListing deserializeTrade(JsonObject trade) {
+    public static ItemListing deserializeTrade(JsonObject trade) {
         String type = readString(trade, "type");
         JsonTradeOffer adapter = findAdapter(type);
         if (adapter == null) {
@@ -236,7 +235,7 @@ public class TradeOfferManager {
         try {
             // Wrapped innermost, under the conditional and pricing layers, so weighted_pool still
             // recognises the PricingTradeFactory it strips off its sub-trades.
-            VillagerTrades.ItemListing factory = RegistryRebindFactory.wrap(adapter.deserialize(trade));
+            ItemListing factory = RegistryRebindFactory.wrap(adapter.deserialize(trade));
 
             if (VillagerTradingPlus.CONFIG.enable_conditional_trades && trade.has("conditions")) {
                 boolean orLogic = "or".equalsIgnoreCase(readString(trade, "logic"));

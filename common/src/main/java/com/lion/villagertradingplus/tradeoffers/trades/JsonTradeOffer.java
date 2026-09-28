@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.VillagerTradingPlus;
 import com.lion.villagertradingplus.tradeoffers.util.ItemStackSerializer;
@@ -10,8 +11,8 @@ import java.util.Optional;
 import net.minecraft.core.component.DataComponentExactPredicate;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponentType;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.core.component.TypedDataComponent;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
@@ -23,7 +24,7 @@ public abstract class JsonTradeOffer {
     protected int demand;
 
     @NotNull
-    public abstract VillagerTrades.ItemListing deserialize(JsonObject json);
+    public abstract ItemListing deserialize(JsonObject json);
 
     protected void loadDefaultStats(JsonObject jsonObject) {
         this.maxUses = readInt(jsonObject, "max_uses", 12);
@@ -71,9 +72,8 @@ public abstract class JsonTradeOffer {
     // erases that link to ComponentType<?> plus Optional<?>, so the cast cannot be avoided here.
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void addChanges(DataComponentExactPredicate.Builder builder, DataComponentPatch changes) {
-        for (Map.Entry<DataComponentType<?>, Optional<?>> entry : changes.entrySet()) {
-            // A *removed* component has no predicate equivalent - only presence can be demanded.
-            entry.getValue().ifPresent(value -> builder.expect((DataComponentType) entry.getKey(), value));
+        for (TypedDataComponent<?> component : changes.split().added()) {
+            builder.expect((DataComponentType) component.type(), component.value());
         }
     }
 
@@ -89,8 +89,8 @@ public abstract class JsonTradeOffer {
         return object.has(key) ? object.get(key).getAsString() : defaultValue;
     }
 
-    public static ResourceLocation readIdentifier(JsonObject object, String key, String defaultValue) {
-        return object.has(key) ? ResourceLocation.tryParse(object.get(key).getAsString()) : ResourceLocation.parse(defaultValue);
+    public static Identifier readIdentifier(JsonObject object, String key, String defaultValue) {
+        return object.has(key) ? Identifier.tryParse(object.get(key).getAsString()) : Identifier.parse(defaultValue);
     }
 
     public static ItemStack getItemStackFromJson(JsonObject json) {

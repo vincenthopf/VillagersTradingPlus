@@ -22,7 +22,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.network.Filterable;
 import net.minecraft.util.datafix.DataFixers;
 import net.minecraft.util.datafix.fixes.References;
@@ -67,7 +67,7 @@ public final class ItemStackSerializer {
         }
 
         String id = idElement.getAsString();
-        Optional<Item> item = BuiltInRegistries.ITEM.getOptional(ResourceLocation.tryParse(id));
+        Optional<Item> item = BuiltInRegistries.ITEM.getOptional(Identifier.tryParse(id));
         if (item.isEmpty()) {
             throw new TradeParseException("unknown item id \"" + id
                     + "\" (is the mod that provides it installed?)");
@@ -108,15 +108,14 @@ public final class ItemStackSerializer {
         }
 
         if (json.has("potion")) {
-            BuiltInRegistries.POTION.get(ResourceLocation.tryParse(json.get("potion").getAsString()))
+            BuiltInRegistries.POTION.get(Identifier.tryParse(json.get("potion").getAsString()))
                     .ifPresent(potion -> stack.set(DataComponents.POTION_CONTENTS,
                             new PotionContents(potion)));
         }
 
         if (json.has("skull_owner")) {
             stack.set(DataComponents.PROFILE,
-                    new ResolvableProfile(Optional.of(json.get("skull_owner").getAsString()),
-                            Optional.empty(), new com.mojang.authlib.properties.PropertyMap()));
+                    ResolvableProfile.createUnresolved(json.get("skull_owner").getAsString()));
         }
 
         if (json.has("book")) {
@@ -165,7 +164,7 @@ public final class ItemStackSerializer {
             }
 
             String id = entry.get("id").getAsString();
-            ResourceLocation identifier = ResourceLocation.tryParse(id);
+            Identifier identifier = Identifier.tryParse(id);
             Optional<Holder.Reference<Enchantment>> enchantment = identifier == null
                     ? Optional.empty()
                     : registry.get().get(ResourceKey.create(Registries.ENCHANTMENT, identifier));

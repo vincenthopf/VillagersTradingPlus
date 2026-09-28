@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.catalog;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.ConditionalTradeFactory;
 import com.lion.villagertradingplus.tradeoffers.PricingTradeFactory;
 import com.lion.villagertradingplus.tradeoffers.RegistryRebindFactory;
@@ -7,7 +8,6 @@ import com.lion.villagertradingplus.tradeoffers.conditions.ParsedConditions;
 import com.lion.villagertradingplus.tradeoffers.conditions.TradeCondition;
 import java.util.List;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 
 /**
  * Turns a trade factory into catalogue rows.
@@ -25,13 +25,13 @@ public final class CatalogExpansion {
     }
 
     /** Expands one top-level factory from a tier pool. */
-    public static void expandTrade(VillagerTrades.ItemListing factory, Entity merchant, CatalogBuilder out) {
+    public static void expandTrade(ItemListing factory, Entity merchant, CatalogBuilder out) {
         out.reset();
         expand(factory, merchant, out);
     }
 
     /** Expands a factory in the current scope. Called recursively by pool expanders. */
-    public static void expand(VillagerTrades.ItemListing factory, Entity merchant, CatalogBuilder out) {
+    public static void expand(ItemListing factory, Entity merchant, CatalogBuilder out) {
         if (out.isFull()) {
             out.countSkipped(1);
             return;

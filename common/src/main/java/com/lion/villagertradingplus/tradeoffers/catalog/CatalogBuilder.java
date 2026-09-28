@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.catalog;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.PricingTradeFactory;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -7,7 +8,6 @@ import java.util.Deque;
 import java.util.List;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffer;
 
@@ -193,7 +193,7 @@ public final class CatalogBuilder {
      * Fallback for factories that cannot enumerate themselves: rolls the factory once with a fixed
      * seed, so the row is stable across openings even when {@code create} is random.
      */
-    public void addSampled(VillagerTrades.ItemListing factory, Entity merchant) {
+    public void addSampled(ItemListing factory, Entity merchant) {
         MerchantOffer offer = factory.getOffer(merchant, RandomSource.create(CATALOG_SEED));
         if (offer != null) {
             addOffer(offer);

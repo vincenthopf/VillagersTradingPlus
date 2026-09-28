@@ -1,5 +1,8 @@
 package com.lion.villagertradingplus.tradeoffers.conditions;
 
+import net.minecraft.world.level.gamerules.GameRule;
+import net.minecraft.world.level.gamerules.GameRuleType;
+import net.minecraft.core.registries.BuiltInRegistries;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -17,15 +20,15 @@ import java.util.function.Function;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
-import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.flag.FeatureFlags;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 
 /**
  * Registry and parser for the cross-cutting {@code "conditions"} block that any trade may carry.
@@ -41,7 +44,7 @@ import net.minecraft.world.level.Level;
 public final class TradeConditions {
 
     private static final Map<String, ConditionType> REGISTRY = new HashMap<>();
-    private static final Map<String, GameRules.Key<GameRules.BooleanValue>> BOOLEAN_RULES = new HashMap<>();
+    
 
     /** How many entries of a list-valued condition to name before collapsing the rest into a count. */
     private static final int DESCRIBE_LIST_LIMIT = 3;
@@ -52,19 +55,6 @@ public final class TradeConditions {
     }
 
     static {
-        // accept() stopped being static in 1.21.6 because game rules are feature-gated now. A
-        // throwaway instance over the default feature set enumerates every rule a vanilla world can
-        // have, which is all this map is for: turning a rule name from JSON into a typed Key.
-        new GameRules(FeatureFlags.DEFAULT_FLAGS).visitGameRuleTypes(new GameRules.GameRuleTypeVisitor() {
-            @Override
-            public <T extends GameRules.Value<T>> void visit(GameRules.Key<T> key, GameRules.Type<T> type) {
-            }
-
-            @Override
-            public void visitBoolean(GameRules.Key<GameRules.BooleanValue> key, GameRules.Type<GameRules.BooleanValue> type) {
-                BOOLEAN_RULES.put(key.getId(), key);
-            }
-        });
         registerBuiltins();
     }
 
@@ -145,18 +135,18 @@ public final class TradeConditions {
     private static TradeCondition parseBiome(JsonObject json) {
         if (json.has("tag")) {
             TagKey<net.minecraft.world.level.biome.Biome> tag = TagKey.create(Registries.BIOME,
-                    ResourceLocation.tryParse(JsonFields.requireString(json, "\"biome\" condition", "tag")));
+                    Identifier.tryParse(JsonFields.requireString(json, "\"biome\" condition", "tag")));
             return villager -> villager.level().getBiome(villager.blockPosition()).is(tag);
         }
         Set<String> biomes = toStringSet(JsonFields.requireArray(json, "\"biome\" condition", "biomes"));
         return villager -> villager.level().getBiome(villager.blockPosition()).unwrapKey()
-                .map(key -> biomes.contains(key.location().toString()))
+                .map(key -> biomes.contains(key.identifier().toString()))
                 .orElse(false);
     }
 
     private static TradeCondition parseDimension(JsonObject json) {
         String dimension = JsonFields.requireString(json, "\"dimension\" condition", "dimension");
-        return villager -> villager.level().dimension().location().toString().equals(dimension);
+        return villager -> villager.level().dimension().identifier().toString().equals(dimension);
     }
 
     private static TradeCondition parseWeather(JsonObject json) {
@@ -190,7 +180,7 @@ public final class TradeConditions {
             phases.add(element.getAsInt());
         }
         boolean requireNight = !json.has("require_night") || json.get("require_night").getAsBoolean();
-        return villager -> phases.contains(villager.level().getMoonPhase())
+        return villager -> phases.contains(villager.level().environmentAttributes().getValue(EnvironmentAttributes.MOON_PHASE, villager.position()).index())
                 && (!requireNight || !villager.level().isBrightOutside());
     }
 
@@ -211,7 +201,7 @@ public final class TradeConditions {
     private static TradeCondition parseGamerule(JsonObject json) {
         String ruleName = JsonFields.requireString(json, "\"gamerule\" condition", "rule");
         boolean expected = !json.has("value") || json.get("value").getAsBoolean();
-        GameRules.Key<GameRules.BooleanValue> key = BOOLEAN_RULES.get(ruleName);
+        GameRule<Boolean> key = booleanRule(ruleName);
         if (key == null) {
             VillagerTradingPlus.LOGGER.error("gamerule condition references unknown boolean rule: " + ruleName);
             return villager -> false;
@@ -219,7 +209,17 @@ public final class TradeConditions {
         // getGameRules() moved off World onto ServerWorld. Trades are only ever generated
         // server-side, so a client-side world simply fails the condition rather than guessing.
         return villager -> villager.level() instanceof ServerLevel serverWorld
-                && serverWorld.getGameRules().getBoolean(key) == expected;
+                && serverWorld.getGameRules().get(key) == expected;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static GameRule<Boolean> booleanRule(String name) {
+        Identifier id = Identifier.tryParse(name);
+        if (id == null) {
+            return null;
+        }
+        GameRule<?> rule = BuiltInRegistries.GAME_RULE.getValue(id);
+        return rule != null && rule.gameRuleType() == GameRuleType.BOOL ? (GameRule<Boolean>) rule : null;
     }
 
     private static TradeCondition parseJobSite(JsonObject json) {
@@ -311,7 +311,7 @@ public final class TradeConditions {
         return id.startsWith("minecraft:") ? id.substring("minecraft:".length()) : id;
     }
 
-    private static Optional<ResourceLocation> jobSiteBlockId(Entity villager) {
+    private static Optional<Identifier> jobSiteBlockId(Entity villager) {
         if (!(villager instanceof Villager villagerEntity)) {
             return Optional.empty();
         }

@@ -1,8 +1,8 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffer;
 import com.google.gson.JsonObject;
@@ -12,7 +12,7 @@ public class JsonBuyItemTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public VillagerTrades.ItemListing deserialize(JsonObject json) {
+    public ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack buy = getItemStackFromJson(JsonFields.requireObject(json, "buy_item trade", "buy"));
@@ -21,7 +21,7 @@ public class JsonBuyItemTradeOffer extends JsonTradeOffer {
         return new Factory(buy, currency, maxUses, experience, priceMultiplier, demand);
     }
 
-    private static class Factory implements VillagerTrades.ItemListing {
+    private static class Factory implements ItemListing {
         private final ItemStack buy;
         private final ItemStack currency;
         private final int maxUses;

@@ -8,7 +8,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
@@ -39,7 +39,7 @@ public final class Ingredient {
         int count = json.has("count") ? json.get("count").getAsInt() : 1;
         if (json.has("tag")) {
             TagKey<net.minecraft.world.item.Item> tag = TagKey.create(Registries.ITEM,
-                    ResourceLocation.tryParse(json.get("tag").getAsString()));
+                    Identifier.tryParse(json.get("tag").getAsString()));
             return new Ingredient(null, tag, count, json);
         }
         return new Ingredient(ItemStackSerializer.fromJson(json), null, count, null);

@@ -3,7 +3,6 @@ package com.lion.villagertradingplus.tradeoffers;
 import com.lion.villagertradingplus.tradeoffers.conditions.TradeCondition;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.trading.MerchantOffer;
 
 /**
@@ -11,12 +10,12 @@ import net.minecraft.world.item.trading.MerchantOffer;
  * {@code null} plugs directly into vanilla's existing null-filtering during offer selection, so a
  * failed condition simply means the trade is not offered by that villager.
  */
-public final class ConditionalTradeFactory implements VillagerTrades.ItemListing {
+public final class ConditionalTradeFactory implements ItemListing {
 
-    private final VillagerTrades.ItemListing delegate;
+    private final ItemListing delegate;
     private final TradeCondition condition;
 
-    public ConditionalTradeFactory(VillagerTrades.ItemListing delegate, TradeCondition condition) {
+    public ConditionalTradeFactory(ItemListing delegate, TradeCondition condition) {
         this.delegate = delegate;
         this.condition = condition;
     }
@@ -34,7 +33,7 @@ public final class ConditionalTradeFactory implements VillagerTrades.ItemListing
      * trades whatever their condition currently says, and marks them, rather than showing a list
      * that silently shrinks when it starts raining.
      */
-    public VillagerTrades.ItemListing delegate() {
+    public ItemListing delegate() {
         return this.delegate;
     }
 

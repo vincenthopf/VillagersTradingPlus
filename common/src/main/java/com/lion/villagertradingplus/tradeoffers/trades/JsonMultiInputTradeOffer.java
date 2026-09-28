@@ -1,9 +1,9 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffer;
 import com.google.gson.JsonObject;
@@ -28,7 +28,7 @@ public class JsonMultiInputTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public VillagerTrades.ItemListing deserialize(JsonObject json) {
+    public ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
         ItemStack inputA = getItemStackFromJson(JsonFields.requireObject(json, "multi_input trade", "input_a"));
         ItemStack inputB = getItemStackFromJson(JsonFields.requireObject(json, "multi_input trade", "input_b"));
@@ -36,7 +36,7 @@ public class JsonMultiInputTradeOffer extends JsonTradeOffer {
         return new Factory(inputA, inputB, sell, maxUses, experience, priceMultiplier, demand);
     }
 
-    private static class Factory implements VillagerTrades.ItemListing {
+    private static class Factory implements ItemListing {
         private final ItemStack inputA;
         private final ItemStack inputB;
         private final ItemStack sell;

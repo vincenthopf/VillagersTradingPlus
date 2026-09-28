@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -14,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.trading.MerchantOffer;
 
 /**
@@ -34,13 +34,13 @@ public class JsonWeightedPoolTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public VillagerTrades.ItemListing deserialize(JsonObject json) {
+    public ItemListing deserialize(JsonObject json) {
         List<Entry> entries = new ArrayList<>();
         int totalWeight = 0;
         for (JsonElement element : JsonFields.requireArray(json, "weighted_pool trade", "pool")) {
             JsonObject entry = element.getAsJsonObject();
             int weight = readInt(entry, "weight", 1);
-            VillagerTrades.ItemListing factory = TradeOfferManager.deserializeTrade(entry.getAsJsonObject("trade"));
+            ItemListing factory = TradeOfferManager.deserializeTrade(entry.getAsJsonObject("trade"));
 
             // deserializeTrade wraps everything it returns in a PricingTradeFactory, and this pool is
             // itself about to be wrapped by whoever called us. Left alone, the global cost scale would
@@ -60,10 +60,10 @@ public class JsonWeightedPoolTradeOffer extends JsonTradeOffer {
         return new Factory(entries, totalWeight);
     }
 
-    private record Entry(int weight, VillagerTrades.ItemListing factory) {
+    private record Entry(int weight, ItemListing factory) {
     }
 
-    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
+    private static class Factory implements ItemListing, CatalogExpandable {
         private final List<Entry> entries;
         private final int totalWeight;
 

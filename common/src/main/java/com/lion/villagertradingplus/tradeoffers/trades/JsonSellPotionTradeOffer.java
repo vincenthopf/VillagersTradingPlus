@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.tradeoffers.trades;
 
+import com.lion.villagertradingplus.tradeoffers.ItemListing;
 import com.lion.villagertradingplus.tradeoffers.util.JsonFields;
 import com.google.gson.JsonObject;
 import com.lion.villagertradingplus.tradeoffers.catalog.CatalogBuilder;
@@ -13,7 +14,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionContents;
@@ -26,7 +26,7 @@ public class JsonSellPotionTradeOffer extends JsonTradeOffer {
 
     @Override
     @NotNull
-    public VillagerTrades.ItemListing deserialize(JsonObject json) {
+    public ItemListing deserialize(JsonObject json) {
         loadDefaultStats(json);
 
         ItemStack sell = getItemStackFromJson(JsonFields.requireObject(json, "sell_potion trade", "sell"));
@@ -36,7 +36,7 @@ public class JsonSellPotionTradeOffer extends JsonTradeOffer {
         return new Factory(buy, sell, currency, maxUses, experience, priceMultiplier);
     }
 
-    private static class Factory implements VillagerTrades.ItemListing, CatalogExpandable {
+    private static class Factory implements ItemListing, CatalogExpandable {
         private final ItemStack buy;
         private final ItemStack sell;
         private final ItemStack currency;
@@ -88,7 +88,7 @@ public class JsonSellPotionTradeOffer extends JsonTradeOffer {
         private static List<Holder<Potion>> brewable(Level world) {
             return BuiltInRegistries.POTION.listElements()
                     .filter(entry -> !entry.value().getEffects().isEmpty()
-                            && world.potionBrewing().isBrewablePotion(entry))
+                            && com.lion.villagertradingplus.tradeoffers.util.BrewablePotions.isBrewable(world, entry))
                     .collect(Collectors.toList());
         }
 
