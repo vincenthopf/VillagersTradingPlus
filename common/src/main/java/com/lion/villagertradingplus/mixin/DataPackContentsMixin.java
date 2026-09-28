@@ -1,5 +1,6 @@
 package com.lion.villagertradingplus.mixin;
 
+import com.lion.villagertradingplus.tradeoffers.PendingTradeFiles;
 import com.lion.villagertradingplus.tradeoffers.util.DatapackRegistries;
 import java.util.List;
 import net.minecraft.commands.Commands;
@@ -43,5 +44,10 @@ public class DataPackContentsMixin {
             List<DataComponentInitializers.PendingComponents<?>> newComponents,
             CallbackInfo ci) {
         DatapackRegistries.set(loadingContext.layers().compositeAccess());
+    }
+
+    @Inject(method = "updateComponentsAndStaticRegistryTags", at = @At("TAIL"))
+    private void villagertradingplus$loadTradeFiles(CallbackInfo ci) {
+        PendingTradeFiles.apply();
     }
 }

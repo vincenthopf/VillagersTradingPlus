@@ -2,8 +2,7 @@ package com.lion.villagertradingplus.platform.fabric;
 
 import com.google.gson.JsonElement;
 import com.lion.villagertradingplus.VillagerTradingPlus;
-import com.lion.villagertradingplus.tradeoffers.TradeMerger;
-import com.lion.villagertradingplus.tradeoffers.TradeOfferManager;
+import com.lion.villagertradingplus.tradeoffers.PendingTradeFiles;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.Identifier;
@@ -35,16 +34,6 @@ public class TradeOfferResourceListener extends SimpleJsonResourceReloadListener
 
     @Override
     protected void apply(Map<Identifier, JsonElement> loader, ResourceManager manager, ProfilerFiller profiler) {
-        loader.forEach((identifier, jsonElement) -> {
-            if (!jsonElement.isJsonObject()) {
-                return;
-            }
-
-            VillagerTradingPlus.LOGGER.info("Deserializing added trades from: " + identifier);
-
-            TradeOfferManager.deserializeJson(jsonElement.getAsJsonObject());
-        });
-
-        TradeMerger.mergeIntoVanilla();
+        PendingTradeFiles.setAdditions(loader);
     }
 }
